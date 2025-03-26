@@ -10,20 +10,26 @@ import {
   Snackbar,
   Avatar,
   IconButton,
-  CircularProgress
+  CircularProgress,
+  List,
+  ListItem,
 } from "@mui/material";
 import { doc, setDoc, getDoc, DocumentData } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "@/libs/firebase";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   getAuth,
-  GoogleAuthProvider,
-  onAuthStateChanged,
   signInWithPopup,
+  GoogleAuthProvider,
   signOut,
-  User
+  onAuthStateChanged,
+  User,
 } from "firebase/auth";
+import DeleteIcon from "@mui/icons-material/Delete";
+import DragHandleIcon from "@mui/icons-material/DragHandle";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 export interface IProfileData extends DocumentData {
   name: string;
@@ -32,17 +38,33 @@ export interface IProfileData extends DocumentData {
   phone: string;
   bio: string;
   avatarUrl: string;
+  skills: string[];
+  experience: string[];
+  education: string;
+  projects: string[];
 }
 
 export default function ProfileForm() {
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<IProfileData>({
     name: "",
     role: "",
     email: "",
     phone: "",
     bio: "",
-    avatarUrl: ""
+    avatarUrl: "",
+    skills: [],
+    experience: [],
+    education: "",
+    projects: [],
   });
+  const [newItem, setNewItem] = useState({
+    skills: "",
+    experience: "",
+    projects: "",
+  });
+  // const [editingIndex, setEditingIndex] = useState<{
+  //   [key: string]: number | null;
+  // }>({ skills: null, experience: null, projects: null });
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -54,7 +76,7 @@ export default function ProfileForm() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        fetchProfile(currentUser.uid);
+        fetchProfile();
       } else {
         setUser(null);
         setLoading(false);
@@ -63,17 +85,24 @@ export default function ProfileForm() {
     return () => unsubscribe();
   }, []);
 
-  const fetchProfile = async (uid: string) => {
-    const docRef = doc(db, "profiles", uid);
+  const fetchProfile = async () => {
+    const docRef = doc(db, "profiles", "public");
     const docSnap = await getDoc(docRef);
-    console.log("docSnap :>> ", docSnap.data());
     if (docSnap.exists()) {
-      setProfile(docSnap.data() as IProfileData);
+      const data = docSnap.data();
+      setProfile({
+        ...data,
+        skills: data.skills || [],
+        experience: data.experience || [],
+        projects: data.projects || [],
+      } as IProfileData);
     }
     setLoading(false);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
@@ -83,7 +112,7 @@ export default function ProfileForm() {
     setUploading(true);
     try {
       const storage = getStorage();
-      const storageRef = ref(storage, `avatars/${user.uid}`);
+      const storageRef = ref(storage, `avatars/public`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
       setProfile((prev) => ({ ...prev, avatarUrl: downloadURL }));
@@ -94,11 +123,50 @@ export default function ProfileForm() {
     }
   };
 
+  const handleAddToList = (key: "skills" | "experience" | "projects") => {
+    const value = newItem[key].trim();
+    if (value) {
+      setProfile((prev) => ({ ...prev, [key]: [...prev[key], value] }));
+      setNewItem((prev) => ({ ...prev, [key]: "" }));
+    }
+  };
+
+  const handleRemoveFromList = (
+    key: "skills" | "experience" | "projects",
+    index: number
+  ) => {
+    setProfile((prev) => ({
+      ...prev,
+      [key]: prev[key].filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleEditItem = (
+    key: "skills" | "experience" | "projects",
+    index: number,
+    value: string
+  ) => {
+    const updated = [...profile[key]];
+    updated[index] = value;
+    setProfile((prev) => ({ ...prev, [key]: updated }));
+  };
+
+  const onDragEnd = (
+    key: "skills" | "experience" | "projects",
+    result: any
+  ) => {
+    if (!result.destination) return;
+    const items = Array.from(profile[key]);
+    const [reordered] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reordered);
+    setProfile((prev) => ({ ...prev, [key]: items }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     try {
-      await setDoc(doc(db, "profiles", user.uid), profile);
+      await setDoc(doc(db, "profiles", "public"), profile);
       setSuccess(true);
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -122,7 +190,11 @@ export default function ProfileForm() {
       email: "",
       phone: "",
       bio: "",
-      avatarUrl: ""
+      avatarUrl: "",
+      skills: [],
+      experience: [],
+      education: "",
+      projects: [],
     });
   };
 
@@ -147,6 +219,74 @@ export default function ProfileForm() {
     );
   }
 
+  const renderListInput = (
+    label: string,
+    key: "skills" | "experience" | "projects"
+  ) => (
+    <Box>
+      <Typography variant="h6" sx={{ mb: 1 }}>
+        {label}
+      </Typography>
+      <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+        <TextField
+          placeholder={`Add ${label}`}
+          value={newItem[key]}
+          onChange={(e) =>
+            setNewItem((prev) => ({ ...prev, [key]: e.target.value }))
+          }
+          fullWidth
+        />
+        <Button onClick={() => handleAddToList(key)} variant="contained">
+          Add
+        </Button>
+      </Box>
+      <DragDropContext onDragEnd={(result) => onDragEnd(key, result)}>
+        <Droppable droppableId={key}>
+          {(provided) => (
+            <List ref={provided.innerRef} {...provided.droppableProps} dense>
+              {profile[key].map((item, index) => (
+                <Draggable
+                  key={index.toString()}
+                  draggableId={`${key}-${index}`}
+                  index={index}
+                >
+                  {(provided) => (
+                    <ListItem
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      secondaryAction={
+                        <IconButton
+                          edge="end"
+                          onClick={() => handleRemoveFromList(key, index)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      }
+                      sx={{ alignItems: "flex-start" }}
+                    >
+                      <Box {...provided.dragHandleProps} sx={{ pr: 1, pt: 1 }}>
+                        <DragHandleIcon fontSize="small" />
+                      </Box>
+                      <TextField
+                        fullWidth
+                        variant="standard"
+                        value={item}
+                        onChange={(e) =>
+                          handleEditItem(key, index, e.target.value)
+                        }
+                      />
+                    </ListItem>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </List>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </Box>
+  );
+
   return (
     <Container maxWidth="sm" sx={{ py: 8 }}>
       <Box
@@ -154,7 +294,7 @@ export default function ProfileForm() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 3
+          mb: 3,
         }}
       >
         <Typography variant="h4">Update Profile</Typography>
@@ -227,10 +367,25 @@ export default function ProfileForm() {
           multiline
           minRows={4}
         />
+
+        {renderListInput("Skills", "skills")}
+        {renderListInput("Experience", "experience")}
+        <TextField
+          label="Education"
+          name="education"
+          value={profile.education}
+          onChange={handleChange}
+          fullWidth
+          multiline
+          minRows={2}
+        />
+        {renderListInput("Projects", "projects")}
+
         <Button type="submit" variant="contained" color="primary">
           Save
         </Button>
       </Box>
+
       <Snackbar
         open={success}
         autoHideDuration={3000}
