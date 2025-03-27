@@ -1,13 +1,8 @@
-// pages/index.tsx
-
 import { useState, useEffect, useRef, ReactNode, RefObject } from "react";
 import {
   Box,
   Typography,
   Stack,
-  Stepper,
-  Step,
-  StepLabel,
   useMediaQuery,
   useTheme,
   LinearProgress,
@@ -25,6 +20,7 @@ import { red, grey } from "@mui/material/colors";
 import { motion } from "framer-motion";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/libs/firebase";
+import NavigationStepper from "@/components/NavigationStepper";
 
 const sections = [
   "about",
@@ -33,7 +29,8 @@ const sections = [
   "education",
   "contact"
 ] as const;
-type SectionKey = (typeof sections)[number];
+
+export type SectionKey = (typeof sections)[number];
 
 export default function Home() {
   const sectionRefs: Record<
@@ -51,8 +48,6 @@ export default function Home() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-
-  console.log("data :>> ", data);
 
   useEffect(() => {
     const fetchAllSections = async () => {
@@ -213,43 +208,11 @@ export default function Home() {
     }
   };
 
-  const bgColor = darkMode ? "#121212" : "#ffffff";
-  const textColor = darkMode ? grey[100] : red[700];
-
-  const navComponent = (
-    <Box sx={{ width: 220, px: 2, py: 4 }}>
-      {/* <Typography variant="h6" gutterBottom>
-        Navigation
-      </Typography> */}
-      <Stepper
-        activeStep={sections.indexOf(active)}
-        orientation="vertical"
-        nonLinear
-      >
-        {sections.map((name) => (
-          <Step key={name} completed={false}>
-            <StepLabel
-              onClick={() => scrollToSection(sectionRefs[name], name)}
-              sx={{ cursor: "pointer" }}
-            >
-              {name.toUpperCase()}
-            </StepLabel>
-          </Step>
-        ))}
-      </Stepper>
-    </Box>
-  );
+  // const bgColor = darkMode ? "#121212" : "#ffffff";
+  // const textColor = darkMode ? grey[100] : "#ec4899";
 
   return (
-    <Box
-      sx={{
-        bgcolor: bgColor,
-        color: textColor,
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column"
-      }}
-    >
+    <Box>
       <LinearProgress
         variant="determinate"
         value={scrollProgress}
@@ -278,7 +241,7 @@ export default function Home() {
             <MenuIcon />
           </IconButton>
         )}
-        <FormControlLabel
+        {/* <FormControlLabel
           control={
             <Switch
               checked={darkMode}
@@ -286,7 +249,7 @@ export default function Home() {
             />
           }
           label="Dark Mode"
-        />
+        /> */}
       </Box>
 
       <Box sx={{ display: "flex", flexGrow: 1, mt: { xs: 6, md: 0 } }}>
@@ -296,7 +259,11 @@ export default function Home() {
             open={drawerOpen}
             onClose={() => setDrawerOpen(false)}
           >
-            {navComponent}
+            <NavigationStepper
+              active={active}
+              sections={sections}
+              onSelect={(s) => scrollToSection(sectionRefs[s], s)}
+            />
           </Drawer>
         ) : (
           <Box
@@ -305,12 +272,16 @@ export default function Home() {
               position: "fixed",
               top: 64,
               left: 0,
-              height: "100vh",
+              // height: "100vh",
               overflowY: "auto",
               zIndex: 1100
             }}
           >
-            {navComponent}
+            <NavigationStepper
+              active={active}
+              sections={sections}
+              onSelect={(s) => scrollToSection(sectionRefs[s], s)}
+            />
           </Box>
         )}
 
@@ -323,12 +294,10 @@ export default function Home() {
                 data-section={section}
                 sx={{ minHeight: "100vh", py: 10, px: { xs: 2, md: 4 } }}
               >
-                {/* <FadeBox> */}
                 <Typography variant="h4" gutterBottom>
                   {section.toUpperCase()}
                 </Typography>
                 {renderContent(section)}
-                {/* </FadeBox> */}
                 <Divider sx={{ mt: 6 }} />
               </Box>
             );
