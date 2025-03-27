@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -13,11 +11,20 @@ import {
   CircularProgress,
   List,
   ListItem,
+  ListItemText,
+  MenuItem,
+  Grid,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Divider,
+  Stack
 } from "@mui/material";
-import { doc, setDoc, getDoc, DocumentData } from "firebase/firestore";
-import { db } from "@/libs/firebase";
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import PhotoCamera from "@mui/icons-material/PhotoCamera";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   getAuth,
@@ -25,372 +32,603 @@ import {
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
-  User,
+  User
 } from "firebase/auth";
-import DeleteIcon from "@mui/icons-material/Delete";
-import DragHandleIcon from "@mui/icons-material/DragHandle";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { db } from "@/libs/firebase";
+import AddIcon from "@mui/icons-material/Add";
 
-export interface IProfileData extends DocumentData {
-  name: string;
-  role: string;
-  email: string;
-  phone: string;
-  bio: string;
-  avatarUrl: string;
-  skills: string[];
-  experience: string[];
-  education: string;
-  projects: string[];
+interface IEducationItem {
+  institution: string;
+  faculty: string;
+  major: string;
+  startYear: number;
+  endYear: number;
 }
+interface ISkillGroup {
+  category: string;
+  items: string[];
+}
+interface IExperienceGroup {
+  company: string;
+  role: string;
+  description: string;
+  startMonth: string;
+  startYear: number;
+  endMonth: string;
+  endYear: number;
+}
+interface IProfileData {
+  about: {
+    name: string;
+    role: string;
+    email: string;
+    phone: string;
+    bio: string;
+    avatarUrl: string;
+  };
+  skills: ISkillGroup[];
+  experience: IExperienceGroup[];
+  education: IEducationItem[];
+}
+
+const years = Array.from(
+  { length: 50 },
+  (_, i) => new Date().getFullYear() - i
+);
+const months = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec"
+];
 
 export default function ProfileForm() {
   const [profile, setProfile] = useState<IProfileData>({
-    name: "",
-    role: "",
-    email: "",
-    phone: "",
-    bio: "",
-    avatarUrl: "",
+    about: { name: "", role: "", email: "", phone: "", bio: "", avatarUrl: "" },
     skills: [],
     experience: [],
-    education: "",
-    projects: [],
+    education: []
   });
-  const [newItem, setNewItem] = useState({
-    skills: "",
-    experience: "",
-    projects: "",
+  const [newSkillCategory, setNewSkillCategory] = useState("");
+  const [newSkillItem, setNewSkillItem] = useState("");
+  const [currentSkillItems, setCurrentSkillItems] = useState<string[]>([]);
+  const [newEducation, setNewEducation] = useState<IEducationItem>({
+    institution: "",
+    faculty: "",
+    major: "",
+    startYear: 2010,
+    endYear: 2014
   });
-  // const [editingIndex, setEditingIndex] = useState<{
-  //   [key: string]: number | null;
-  // }>({ skills: null, experience: null, projects: null });
-  const [success, setSuccess] = useState(false);
+  const [editingEducationIndex, setEditingEducationIndex] = useState<
+    number | null
+  >(null);
+  const [successSection, setSuccessSection] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
-  const auth = getAuth();
+  const [newExperience, setNewExperience] = useState<IExperienceGroup>({
+    company: "",
+    role: "",
+    description: "",
+    startMonth: "",
+    startYear: new Date().getFullYear(),
+    endMonth: "",
+    endYear: new Date().getFullYear()
+  });
 
+  const auth = getAuth();
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        fetchProfile();
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      if (user) fetchProfile();
+      else setLoading(false);
     });
-    return () => unsubscribe();
+    return () => unsub();
   }, []);
 
   const fetchProfile = async () => {
-    const docRef = doc(db, "profiles", "public");
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      setProfile({
-        ...data,
-        skills: data.skills || [],
-        experience: data.experience || [],
-        projects: data.projects || [],
-      } as IProfileData);
+    const snap = await getDoc(doc(db, "profiles", "public"));
+    if (snap.exists()) {
+      setProfile(snap.data() as IProfileData);
     }
     setLoading(false);
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setProfile({ ...profile, [e.target.name]: e.target.value });
+  const handleAvatarUpload = async (file: File) => {
+    const storageRef = ref(getStorage(), "avatars/public");
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    setProfile((p) => ({ ...p, about: { ...p.about, avatarUrl: url } }));
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-    setUploading(true);
-    try {
-      const storage = getStorage();
-      const storageRef = ref(storage, `avatars/public`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      setProfile((prev) => ({ ...prev, avatarUrl: downloadURL }));
-    } catch (error) {
-      console.error("Upload failed:", error);
-    } finally {
-      setUploading(false);
+  const handleAddSkillItem = () => {
+    if (newSkillItem.trim()) {
+      setCurrentSkillItems([...currentSkillItems, newSkillItem.trim()]);
+      setNewSkillItem("");
     }
   };
 
-  const handleAddToList = (key: "skills" | "experience" | "projects") => {
-    const value = newItem[key].trim();
-    if (value) {
-      setProfile((prev) => ({ ...prev, [key]: [...prev[key], value] }));
-      setNewItem((prev) => ({ ...prev, [key]: "" }));
-    }
+  const handleAddSkillGroup = () => {
+    if (!newSkillCategory || currentSkillItems.length === 0) return;
+    setProfile((p) => ({
+      ...p,
+      skills: [
+        ...p.skills,
+        { category: newSkillCategory, items: currentSkillItems }
+      ]
+    }));
+    setNewSkillCategory("");
+    setCurrentSkillItems([]);
   };
 
-  const handleRemoveFromList = (
-    key: "skills" | "experience" | "projects",
-    index: number
-  ) => {
+  const handleEducationSave = () => {
+    const updated = profile.education ? [...profile.education] : [];
+    if (editingEducationIndex !== null)
+      updated[editingEducationIndex] = newEducation;
+    else updated.push(newEducation);
+    setProfile((p) => ({ ...p, education: updated }));
+    setNewEducation({
+      institution: "",
+      faculty: "",
+      major: "",
+      startYear: 2010,
+      endYear: 2014
+    });
+    setEditingEducationIndex(null);
+  };
+
+  const handleExperienceSave = () => {
+    const {
+      company,
+      role,
+      description,
+      startMonth,
+      startYear,
+      endMonth,
+      endYear
+    } = newExperience;
+    if (!company || !role || !description || !startMonth || !endMonth) {
+      alert("Please fill in all fields.");
+      return;
+    }
+    if (
+      startYear > endYear ||
+      (startYear === endYear &&
+        months.indexOf(startMonth) > months.indexOf(endMonth))
+    ) {
+      alert("Start date must be before end date.");
+      return;
+    }
     setProfile((prev) => ({
       ...prev,
-      [key]: prev[key].filter((_, i) => i !== index),
+      experience: prev.experience
+        ? [...prev.experience, newExperience]
+        : [newExperience]
     }));
-  };
-
-  const handleEditItem = (
-    key: "skills" | "experience" | "projects",
-    index: number,
-    value: string
-  ) => {
-    const updated = [...profile[key]];
-    updated[index] = value;
-    setProfile((prev) => ({ ...prev, [key]: updated }));
-  };
-
-  const onDragEnd = (
-    key: "skills" | "experience" | "projects",
-    result: any
-  ) => {
-    if (!result.destination) return;
-    const items = Array.from(profile[key]);
-    const [reordered] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reordered);
-    setProfile((prev) => ({ ...prev, [key]: items }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    try {
-      await setDoc(doc(db, "profiles", "public"), profile);
-      setSuccess(true);
-    } catch (error) {
-      console.error("Error updating profile:", error);
-    }
-  };
-
-  const handleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Login failed:", error);
-    }
-  };
-
-  const handleLogout = async () => {
-    await signOut(auth);
-    setProfile({
-      name: "",
+    setNewExperience({
+      company: "",
       role: "",
-      email: "",
-      phone: "",
-      bio: "",
-      avatarUrl: "",
-      skills: [],
-      experience: [],
-      education: "",
-      projects: [],
+      description: "",
+      startMonth: "",
+      startYear: new Date().getFullYear(),
+      endMonth: "",
+      endYear: new Date().getFullYear()
     });
   };
 
-  if (loading) {
+  const handleEditExperience = (index: number) => {
+    const exp = profile.experience[index];
+    setNewExperience(exp);
+    setProfile((prev) => ({
+      ...prev,
+      experience: prev.experience.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleDeleteExperience = (index: number) => {
+    setProfile((prev) => ({
+      ...prev,
+      experience: prev.experience.filter((_, i) => i !== index)
+    }));
+  };
+
+  if (loading)
     return (
-      <Container maxWidth="sm" sx={{ py: 8, textAlign: "center" }}>
+      <Container>
         <CircularProgress />
       </Container>
     );
-  }
 
   if (!user) {
     return (
-      <Container maxWidth="sm" sx={{ py: 8, textAlign: "center" }}>
+      <Container sx={{ textAlign: "center", py: 10 }}>
         <Typography variant="h5" gutterBottom>
-          Please sign in to update your profile
+          Sign in to edit your profile
         </Typography>
-        <Button variant="contained" color="primary" onClick={handleLogin}>
+        <Button
+          variant="contained"
+          onClick={() => signInWithPopup(auth, new GoogleAuthProvider())}
+        >
           Sign in with Google
         </Button>
       </Container>
     );
   }
 
-  const renderListInput = (
-    label: string,
-    key: "skills" | "experience" | "projects"
-  ) => (
-    <Box>
-      <Typography variant="h6" sx={{ mb: 1 }}>
-        {label}
-      </Typography>
-      <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
-        <TextField
-          placeholder={`Add ${label}`}
-          value={newItem[key]}
-          onChange={(e) =>
-            setNewItem((prev) => ({ ...prev, [key]: e.target.value }))
-          }
-          fullWidth
-        />
-        <Button onClick={() => handleAddToList(key)} variant="contained">
-          Add
-        </Button>
-      </Box>
-      <DragDropContext onDragEnd={(result) => onDragEnd(key, result)}>
-        <Droppable droppableId={key}>
-          {(provided) => (
-            <List ref={provided.innerRef} {...provided.droppableProps} dense>
-              {profile[key].map((item, index) => (
-                <Draggable
-                  key={index.toString()}
-                  draggableId={`${key}-${index}`}
-                  index={index}
-                >
-                  {(provided) => (
-                    <ListItem
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      secondaryAction={
-                        <IconButton
-                          edge="end"
-                          onClick={() => handleRemoveFromList(key, index)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      }
-                      sx={{ alignItems: "flex-start" }}
-                    >
-                      <Box {...provided.dragHandleProps} sx={{ pr: 1, pt: 1 }}>
-                        <DragHandleIcon fontSize="small" />
-                      </Box>
-                      <TextField
-                        fullWidth
-                        variant="standard"
-                        value={item}
-                        onChange={(e) =>
-                          handleEditItem(key, index, e.target.value)
-                        }
-                      />
-                    </ListItem>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </List>
-          )}
-        </Droppable>
-      </DragDropContext>
-    </Box>
-  );
-
   return (
-    <Container maxWidth="sm" sx={{ py: 8 }}>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h4">Update Profile</Typography>
-        <Button variant="outlined" onClick={handleLogout}>
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h4" gutterBottom>
+          Update Profile
+        </Typography>
+        <Button color="error" onClick={() => signOut(auth)}>
           Logout
         </Button>
       </Box>
 
-      <Box sx={{ textAlign: "center", mb: 3 }}>
-        <Avatar
-          src={profile.avatarUrl}
-          sx={{ width: 100, height: 100, mx: "auto" }}
-        />
-        <IconButton component="label" size="small">
-          <PhotoCameraIcon />
-          <input
-            type="file"
-            hidden
-            accept="image/*"
-            onChange={handleImageUpload}
+      <Accordion defaultExpanded>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography>About</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box display="flex" gap={2} alignItems="center">
+            <Avatar
+              src={profile.about.avatarUrl}
+              sx={{ width: 80, height: 80 }}
+            />
+            <IconButton component="label">
+              <PhotoCamera />
+              <input
+                type="file"
+                hidden
+                onChange={(e) =>
+                  e.target.files?.[0] && handleAvatarUpload(e.target.files[0])
+                }
+              />
+            </IconButton>
+          </Box>
+          {["name", "role", "email", "phone", "bio"].map((f, i) => (
+            <TextField
+              key={f}
+              label={f}
+              fullWidth
+              sx={{ mt: 2 }}
+              value={profile.about[f as keyof typeof profile.about]}
+              onChange={(e) =>
+                setProfile((p) => ({
+                  ...p,
+                  about: { ...p.about, [f]: e.target.value }
+                }))
+              }
+            />
+          ))}
+        </AccordionDetails>
+      </Accordion>
+
+      <Accordion>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography>Skills</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          {profile.skills?.map((group, i) => (
+            <Box key={i} mb={2}>
+              <Typography variant="subtitle1" fontWeight="bold">
+                {group.category}
+              </Typography>
+              <List dense>
+                {group.items?.map((item, j) => (
+                  <ListItem key={j}>
+                    <ListItemText primary={item} />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          ))}
+
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="subtitle1" fontWeight="bold">
+            Add New Skill Group
+          </Typography>
+          <TextField
+            fullWidth
+            label="Category"
+            value={newSkillCategory}
+            onChange={(e) => setNewSkillCategory(e.target.value)}
+            sx={{ mt: 2 }}
           />
-        </IconButton>
-        {uploading && <Typography variant="body2">Uploading...</Typography>}
-      </Box>
+          <Box display="flex" gap={2} mt={2}>
+            <TextField
+              label="Skill"
+              fullWidth
+              value={newSkillItem}
+              onChange={(e) => setNewSkillItem(e.target.value)}
+            />
+            <IconButton aria-label="add" onClick={handleAddSkillItem}>
+              <AddIcon />
+            </IconButton>
+          </Box>
+          <List dense>
+            {currentSkillItems?.map((item, idx) => (
+              <ListItem key={idx}>
+                <ListItemText primary={item} />
+              </ListItem>
+            ))}
+          </List>
+          <Button
+            sx={{ mt: 2 }}
+            onClick={handleAddSkillGroup}
+            startIcon={<AddIcon />}
+          >
+            Add Skill Group
+          </Button>
+        </AccordionDetails>
+      </Accordion>
 
-      <Box
-        component="form"
-        onSubmit={handleSubmit}
-        noValidate
-        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-      >
-        <TextField
-          label="Name"
-          name="name"
-          value={profile.name}
-          onChange={handleChange}
-          fullWidth
-          required
-        />
-        <TextField
-          label="Role"
-          name="role"
-          value={profile.role}
-          onChange={handleChange}
-          fullWidth
-          required
-        />
-        <TextField
-          label="Email"
-          name="email"
-          value={profile.email}
-          onChange={handleChange}
-          fullWidth
-          required
-        />
-        <TextField
-          label="Phone"
-          name="phone"
-          value={profile.phone}
-          onChange={handleChange}
-          fullWidth
-          required
-        />
-        <TextField
-          label="Bio"
-          name="bio"
-          value={profile.bio}
-          onChange={handleChange}
-          fullWidth
-          multiline
-          minRows={4}
-        />
+      <Accordion>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography>Experience</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Stack spacing={2}>
+            <TextField
+              label="Company"
+              value={newExperience.company}
+              onChange={(e) =>
+                setNewExperience((p) => ({ ...p, company: e.target.value }))
+              }
+            />
+            <TextField
+              label="Role"
+              value={newExperience.role}
+              onChange={(e) =>
+                setNewExperience((p) => ({ ...p, role: e.target.value }))
+              }
+            />
+            <TextField
+              label="Description"
+              multiline
+              minRows={2}
+              value={newExperience.description}
+              onChange={(e) =>
+                setNewExperience((p) => ({ ...p, description: e.target.value }))
+              }
+            />
+            <Stack direction="row" spacing={2}>
+              <TextField
+                select
+                label="Start Month"
+                value={newExperience.startMonth}
+                onChange={(e) =>
+                  setNewExperience((p) => ({
+                    ...p,
+                    startMonth: e.target.value
+                  }))
+                }
+                sx={{ flex: 1 }}
+              >
+                {months.map((m) => (
+                  <MenuItem key={m} value={m}>
+                    {m}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Start Year"
+                value={newExperience.startYear}
+                onChange={(e) =>
+                  setNewExperience((p) => ({
+                    ...p,
+                    startYear: +e.target.value
+                  }))
+                }
+                sx={{ flex: 1 }}
+              >
+                {years.map((y) => (
+                  <MenuItem key={y} value={y}>
+                    {y}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+            <Stack direction="row" spacing={2}>
+              <TextField
+                select
+                label="End Month"
+                value={newExperience.endMonth}
+                onChange={(e) =>
+                  setNewExperience((p) => ({ ...p, endMonth: e.target.value }))
+                }
+                sx={{ flex: 1 }}
+              >
+                {months.map((m) => (
+                  <MenuItem key={m} value={m}>
+                    {m}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="End Year"
+                value={newExperience.endYear}
+                onChange={(e) =>
+                  setNewExperience((p) => ({ ...p, endYear: +e.target.value }))
+                }
+                sx={{ flex: 1 }}
+              >
+                {years.map((y) => (
+                  <MenuItem key={y} value={y}>
+                    {y}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+          </Stack>
+          <Button
+            sx={{ mt: 2 }}
+            onClick={handleExperienceSave}
+            startIcon={<AddIcon />}
+          >
+            Add Experience
+          </Button>
+          {profile.experience?.map((exp, i) => (
+            <Box
+              key={i}
+              mt={2}
+              p={2}
+              border={1}
+              borderColor="divider"
+              borderRadius={1}
+            >
+              <Typography fontWeight="bold">
+                {exp.company} - {exp.role}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {exp.startMonth} {exp.startYear} - {exp.endMonth} {exp.endYear}
+              </Typography>
+              <Typography sx={{ mt: 1 }}>{exp.description}</Typography>
+              <Box textAlign="right">
+                <IconButton onClick={() => handleEditExperience(i)}>
+                  <EditIcon />
+                </IconButton>
+                <IconButton onClick={() => handleDeleteExperience(i)}>
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            </Box>
+          ))}
+        </AccordionDetails>
+      </Accordion>
 
-        {renderListInput("Skills", "skills")}
-        {renderListInput("Experience", "experience")}
-        <TextField
-          label="Education"
-          name="education"
-          value={profile.education}
-          onChange={handleChange}
-          fullWidth
-          multiline
-          minRows={2}
-        />
-        {renderListInput("Projects", "projects")}
+      <Accordion>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography>Education</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Stack spacing={2}>
+            <TextField
+              label="Institution"
+              value={newEducation.institution}
+              onChange={(e) =>
+                setNewEducation((p) => ({ ...p, institution: e.target.value }))
+              }
+            />
+            <TextField
+              label="Faculty"
+              value={newEducation.faculty}
+              onChange={(e) =>
+                setNewEducation((p) => ({ ...p, faculty: e.target.value }))
+              }
+            />
+            <TextField
+              label="Major"
+              value={newEducation.major}
+              onChange={(e) =>
+                setNewEducation((p) => ({ ...p, major: e.target.value }))
+              }
+            />
+            <Stack direction="row" spacing={2}>
+              <TextField
+                select
+                label="Start Year"
+                value={newEducation.startYear}
+                onChange={(e) =>
+                  setNewEducation((p) => ({ ...p, startYear: +e.target.value }))
+                }
+                sx={{ flex: 1 }}
+              >
+                {years.map((y) => (
+                  <MenuItem key={y} value={y}>
+                    {y}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="End Year"
+                value={newEducation.endYear}
+                onChange={(e) =>
+                  setNewEducation((p) => ({ ...p, endYear: +e.target.value }))
+                }
+                sx={{ flex: 1 }}
+              >
+                {years.map((y) => (
+                  <MenuItem key={y} value={y}>
+                    {y}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+          </Stack>
+          <Button onClick={handleEducationSave} sx={{ mt: 1 }}>
+            + Add Education
+          </Button>
+          {profile.education?.map((edu, i) => (
+            <Box key={i} mt={2} display="flex" justifyContent="space-between">
+              <Box>
+                <Typography fontWeight={600}>{edu.institution}</Typography>
+                <Typography>
+                  {edu.faculty} - {edu.major}
+                </Typography>
+                <Typography>
+                  {edu.startYear} - {edu.endYear}
+                </Typography>
+              </Box>
+              <Box>
+                <IconButton
+                  onClick={() => {
+                    setNewEducation(edu);
+                    setEditingEducationIndex(i);
+                  }}
+                >
+                  <EditIcon />
+                </IconButton>
+                <IconButton
+                  onClick={() =>
+                    setProfile((p) => ({
+                      ...p,
+                      education: p.education.filter((_, j) => j !== i)
+                    }))
+                  }
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            </Box>
+          ))}
+        </AccordionDetails>
+      </Accordion>
 
-        <Button type="submit" variant="contained" color="primary">
-          Save
+      <Box textAlign="center" mt={4}>
+        <Button
+          variant="contained"
+          size="large"
+          onClick={async () => {
+            if (!user) return;
+            await setDoc(doc(db, "profiles", "public"), profile, {
+              merge: true
+            });
+            setSuccessSection("all");
+            setTimeout(() => setSuccessSection(null), 3000);
+          }}
+        >
+          Save All
         </Button>
       </Box>
 
       <Snackbar
-        open={success}
+        open={!!successSection}
         autoHideDuration={3000}
-        onClose={() => setSuccess(false)}
-        message="Profile updated successfully!"
+        onClose={() => setSuccessSection(null)}
+        message={`Updated ${successSection} section!`}
       />
     </Container>
   );

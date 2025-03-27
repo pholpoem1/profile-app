@@ -17,7 +17,8 @@ import {
   CircularProgress,
   Divider,
   Drawer,
-  IconButton
+  IconButton,
+  Container
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { red, grey } from "@mui/material/colors";
@@ -29,7 +30,6 @@ const sections = [
   "about",
   "skills",
   "experience",
-  "projects",
   "education",
   "contact"
 ] as const;
@@ -39,10 +39,9 @@ export default function Home() {
   const sectionRefs: Record<
     SectionKey,
     RefObject<HTMLDivElement>
-  > = Object.fromEntries(sections.map((key) => [key, useRef(null)])) as Record<
-    SectionKey,
-    RefObject<HTMLDivElement>
-  >;
+  > = Object.fromEntries(
+    sections.map((key) => [key, useRef<HTMLDivElement>(null)])
+  ) as Record<SectionKey, RefObject<HTMLDivElement>>;
 
   const [active, setActive] = useState<SectionKey>("about");
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -53,12 +52,13 @@ export default function Home() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
+  console.log("data :>> ", data);
+
   useEffect(() => {
     const fetchAllSections = async () => {
       try {
         const docSnap = await getDoc(doc(db, "profiles", "public"));
         if (docSnap.exists()) {
-          console.log("docSnap.data() :>> ", docSnap.data());
           setData(docSnap.data());
         }
       } catch (e) {
@@ -107,20 +107,24 @@ export default function Home() {
 
   const FadeBox = ({ children }: { children: ReactNode }) => (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
+      transition={{ duration: 0.3 }}
       viewport={{ once: true }}
     >
       {children}
     </motion.div>
   );
 
+  if (loading)
+    return (
+      <Container>
+        <CircularProgress />
+      </Container>
+    );
+
   const renderContent = (section: SectionKey) => {
-    console.log("data :>> ", data);
-    console.log("section :>> ", section);
-    const content =
-      section === "about" || section === "education" ? data : data[section];
+    const content = data[section];
     if (!content) return null;
 
     switch (section) {
@@ -140,25 +144,62 @@ export default function Home() {
           </Stack>
         );
       case "skills":
-      case "experience":
-      case "projects":
         return (
-          <Stack spacing={1}>
+          <Stack spacing={3}>
             {Array.isArray(content)
-              ? content.map((item, i) => (
-                  <Typography key={i}>• {item}</Typography>
+              ? content.map((group: any, i: number) => (
+                  <Box key={i}>
+                    <Typography fontWeight="bold">{group.category}</Typography>
+                    <Stack pl={2} spacing={0.5}>
+                      {group.items.map((item: string, j: number) => (
+                        <Typography key={j}>• {item}</Typography>
+                      ))}
+                    </Stack>
+                  </Box>
+                ))
+              : null}
+          </Stack>
+        );
+      case "experience":
+        return (
+          <Stack spacing={3}>
+            {Array.isArray(content)
+              ? content.map((exp: any, i: number) => (
+                  <Box key={i}>
+                    <Typography variant="h6">
+                      {exp.company} - {exp.role}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {exp.startMonth} {exp.startYear} - {exp.endMonth}{" "}
+                      {exp.endYear}
+                    </Typography>
+                    <Typography sx={{ mt: 1 }}>{exp.description}</Typography>
+                  </Box>
                 ))
               : null}
           </Stack>
         );
       case "education":
         return (
-          <Box>
-            <Typography variant="h6">{content.degree}</Typography>
-            <Typography>{content.institution}</Typography>
-            <Typography>{content.year}</Typography>
-          </Box>
+          <Stack spacing={3}>
+            {Array.isArray(content)
+              ? content.map((edu: any, i: number) => (
+                  <Box key={i}>
+                    <Typography variant="h6" fontWeight="bold">
+                      {edu.institution}
+                    </Typography>
+                    <Typography variant="subtitle1">
+                      {edu.faculty} - {edu.major}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {edu.startYear} - {edu.endYear}
+                    </Typography>
+                  </Box>
+                ))
+              : null}
+          </Stack>
         );
+
       case "contact":
         return (
           <Stack spacing={1}>
@@ -177,9 +218,9 @@ export default function Home() {
 
   const navComponent = (
     <Box sx={{ width: 220, px: 2, py: 4 }}>
-      <Typography variant="h6" gutterBottom>
+      {/* <Typography variant="h6" gutterBottom>
         Navigation
-      </Typography>
+      </Typography> */}
       <Stepper
         activeStep={sections.indexOf(active)}
         orientation="vertical"
@@ -274,23 +315,24 @@ export default function Home() {
         )}
 
         <Box sx={{ flex: 1, ml: { xs: 0, md: "220px" } }}>
-          {sections.map((section) => (
-            <Box
-              key={section}
-              ref={sectionRefs[section]}
-              data-section={section}
-              sx={{ minHeight: "100vh", py: 10, px: { xs: 2, md: 4 } }}
-            >
-              <FadeBox>
+          {sections.map((section) => {
+            return (
+              <Box
+                key={section}
+                ref={sectionRefs[section]}
+                data-section={section}
+                sx={{ minHeight: "100vh", py: 10, px: { xs: 2, md: 4 } }}
+              >
+                {/* <FadeBox> */}
                 <Typography variant="h4" gutterBottom>
                   {section.toUpperCase()}
                 </Typography>
-                {loading && <CircularProgress />}
-                {!loading && renderContent(section)}
-              </FadeBox>
-              <Divider sx={{ mt: 6 }} />
-            </Box>
-          ))}
+                {renderContent(section)}
+                {/* </FadeBox> */}
+                <Divider sx={{ mt: 6 }} />
+              </Box>
+            );
+          })}
         </Box>
       </Box>
     </Box>

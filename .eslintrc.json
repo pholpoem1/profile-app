@@ -1,0 +1,40 @@
+{
+  "extends": ["next", "next/core-web-vitals", "eslint:recommended", "prettier"],
+  "plugins": ["prettier", "test-selectors"],
+  "rules": {
+    "no-unused-vars": [
+      "warn",
+      { "args": "after-used", "varsIgnorePattern": "^_", "argsIgnorePattern": "^_", "ignoreRestSiblings": true }
+    ],
+    "prettier/prettier": "warn",
+    "no-console": "off",
+    "import/no-anonymous-default-export": "off",
+    "react/no-unescaped-entities": 0,
+    "comma-dangle": "off",
+    "no-plusplus": "off",
+    "import/no-unresolved": "off",
+    "react-hooks/exhaustive-deps": "off",
+    "react/jsx-filename-extension": "off",
+    "react/jsx-props-no-spreading": "off",
+    "react/require-default-props": "off",
+    "react/forbid-prop-types": "off",
+    "jsx-a11y/click-events-have-key-events": "off",
+    "jsx-a11y/no-static-element-interactions": "off",
+    "jsx-a11y/control-has-associated-label": "off",
+    "jsx-a11y/anchor-is-valid": "off",
+    "react/destructuring-assignment": 0,
+    "jsx-closing-bracket-location": 0,
+    "react/jsx-closing-bracket-location": 0,
+    "react/jsx-curly-brace-presence": ["warn", "never"],
+    "react/display-name": "off",
+    "@next/next/no-before-interactive-script-outside-document": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
+      "env": {
+        "jest": true
+      }
+    }
+  ]
+}
