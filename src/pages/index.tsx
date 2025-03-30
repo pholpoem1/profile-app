@@ -23,8 +23,8 @@ const sections = [
   "about",
   "skills",
   "experience",
-  "education",
-  "contact"
+  "education"
+  // "contact"
 ] as const;
 
 export type SectionKey = (typeof sections)[number];
@@ -117,15 +117,48 @@ export default function Home() {
       case "about":
         return (
           <Stack
-            direction={{ xs: "column", md: "row" }}
+            direction={"column"}
             spacing={4}
-            alignItems={{ xs: "flex-start", md: "center" }}
+            alignItems={"flex-start"}
+            width={"100%"}
           >
-            <Avatar src={content.avatarUrl} sx={{ width: 100, height: 100 }} />
+            <Stack
+              direction={"row"}
+              spacing={5}
+              width={"100%"}
+              alignItems={"center"}
+              // justifyContent={"space-between"}
+            >
+              <Avatar
+                src={content.avatarUrl}
+                sx={{
+                  width: 150,
+                  height: 150,
+                  borderRadius: "16px",
+                  border: "2px solid white"
+                }}
+              />
+              <Stack spacing={1}>
+                <Typography>📧 {content.email}</Typography>
+                <Typography>📞 {content.phone}</Typography>
+                <Typography>
+                  🌐{" "}
+                  <a target="_blank" href={content.github}>
+                    {content.github}
+                  </a>
+                </Typography>
+                <Typography>
+                  🌐{" "}
+                  <a target="_blank" href={content.linkedin}>
+                    {content.linkedin}
+                  </a>
+                </Typography>
+              </Stack>
+            </Stack>
             <Box>
               <Typography variant="h4">{content.name}</Typography>
               <Typography variant="h6">{content.role}</Typography>
-              <Typography>{content.bio}</Typography>
+              <Box dangerouslySetInnerHTML={{ __html: content.bio }} />
             </Box>
           </Stack>
         );
@@ -185,15 +218,14 @@ export default function Home() {
               : null}
           </Stack>
         );
-
-      case "contact":
-        return (
-          <Stack spacing={1}>
-            <Typography>📧 {content.email}</Typography>
-            <Typography>📞 {content.phone}</Typography>
-            <Typography>🌐 {content.website}</Typography>
-          </Stack>
-        );
+      // case "contact":
+      //   return (
+      //     <Stack spacing={1}>
+      //       <Typography>📧 {data.about.email}</Typography>
+      //       <Typography>📞 {data.about.phone}</Typography>
+      //       <Typography>🌐 {data.about.github}</Typography>
+      //     </Stack>
+      //   );
       default:
         return null;
     }
