@@ -1,5 +1,14 @@
 import { Box, Container, FormControlLabel, Switch } from "@mui/material";
 
+import { Lato } from "next/font/google";
+
+const lato = Lato({
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  subsets: ["latin"],
+  display: "swap"
+});
+
 const LayoutPage = ({
   children,
   darkMode,
@@ -10,14 +19,8 @@ const LayoutPage = ({
   setDarkMode: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   return (
-    <main>
-      <Box
-      // sx={{
-      //   bgcolor: darkMode ? "#121212" : "#fff",
-      //   color: darkMode ? "#eee" : "#111",
-      //   minHeight: "100vh"
-      // }}
-      >
+    <main className={lato.className}>
+      <Box>
         <Box sx={{ position: "fixed", top: 8, right: 16, zIndex: 1300 }}>
           <FormControlLabel
             control={

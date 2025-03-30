@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, ReactNode, RefObject } from "react";
+import { useState, useEffect, useRef, RefObject } from "react";
 import {
   Box,
   Typography,
@@ -7,8 +7,6 @@ import {
   useTheme,
   LinearProgress,
   Avatar,
-  Switch,
-  FormControlLabel,
   CircularProgress,
   Divider,
   Drawer,
@@ -16,11 +14,10 @@ import {
   Container
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import { red, grey } from "@mui/material/colors";
-import { motion } from "framer-motion";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/libs/firebase";
 import NavigationStepper from "@/components/NavigationStepper";
+import Loading from "@/components/Loading";
 
 const sections = [
   "about",
@@ -42,7 +39,6 @@ export default function Home() {
 
   const [active, setActive] = useState<SectionKey>("about");
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [darkMode, setDarkMode] = useState(false);
   const [data, setData] = useState<Partial<Record<SectionKey, any>>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -100,23 +96,18 @@ export default function Home() {
     }
   };
 
-  const FadeBox = ({ children }: { children: ReactNode }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      viewport={{ once: true }}
-    >
-      {children}
-    </motion.div>
-  );
+  // const FadeBox = ({ children }: { children: ReactNode }) => (
+  //   <motion.div
+  //     initial={{ opacity: 0, y: 20 }}
+  //     whileInView={{ opacity: 1, y: 0 }}
+  //     transition={{ duration: 0.3 }}
+  //     viewport={{ once: true }}
+  //   >
+  //     {children}
+  //   </motion.div>
+  // );
 
-  if (loading)
-    return (
-      <Container>
-        <CircularProgress />
-      </Container>
-    );
+  if (loading) return <Loading />;
 
   const renderContent = (section: SectionKey) => {
     const content = data[section];
@@ -208,9 +199,6 @@ export default function Home() {
     }
   };
 
-  // const bgColor = darkMode ? "#121212" : "#ffffff";
-  // const textColor = darkMode ? grey[100] : "#ec4899";
-
   return (
     <Box>
       <LinearProgress
@@ -241,15 +229,6 @@ export default function Home() {
             <MenuIcon />
           </IconButton>
         )}
-        {/* <FormControlLabel
-          control={
-            <Switch
-              checked={darkMode}
-              onChange={() => setDarkMode(!darkMode)}
-            />
-          }
-          label="Dark Mode"
-        /> */}
       </Box>
 
       <Box sx={{ display: "flex", flexGrow: 1, mt: { xs: 6, md: 0 } }}>
