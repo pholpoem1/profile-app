@@ -5,7 +5,6 @@ import {
   Container,
   TextField,
   Typography,
-  Snackbar,
   Avatar,
   IconButton,
   CircularProgress,
@@ -22,19 +21,27 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
-  getAuth,
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
   User
 } from "firebase/auth";
-import { db } from "@/libs/firebase";
+import { auth, db } from "@/libs/firebase";
 import AddIcon from "@mui/icons-material/Add";
+import { useDropzone } from "react-dropzone";
+import { uploadFileToStorageAndSaveUrl } from "@/utils/uploadFile";
+import { CONSTANTS } from "@/utils/constants";
+import { deleteFileAndClearUrl } from "@/utils/deleteFile";
+import { useSnackbar } from "notistack";
+import Image from "next/image";
+import dynamic from "next/dynamic";
+import Loading from "@/components/Loading";
+const CustomEditor = dynamic(() => import("../../components/CustomEditor"), {
+  ssr: false
+});
 
 interface IEducationItem {
   institution: string;
@@ -64,6 +71,9 @@ interface IProfileData {
     phone: string;
     bio: string;
     avatarUrl: string;
+    linkedin: string;
+    github: string;
+    resumeUrl?: string;
   };
   skills: ISkillGroup[];
   experience: IExperienceGroup[];
@@ -90,8 +100,20 @@ const months = [
 ];
 
 export default function ProfileForm() {
+  const { enqueueSnackbar } = useSnackbar();
+
   const [profile, setProfile] = useState<IProfileData>({
-    about: { name: "", role: "", email: "", phone: "", bio: "", avatarUrl: "" },
+    about: {
+      name: "",
+      role: "",
+      email: "",
+      phone: "",
+      bio: "",
+      avatarUrl: "",
+      linkedin: "",
+      github: "",
+      resumeUrl: ""
+    },
     skills: [],
     experience: [],
     education: []
@@ -109,9 +131,17 @@ export default function ProfileForm() {
   const [editingEducationIndex, setEditingEducationIndex] = useState<
     number | null
   >(null);
-  const [successSection, setSuccessSection] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false);
+  const [isFileUploading, setIsFileUploading] = useState(false);
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
+
+  useEffect(() => {
+    setIsLayoutReady(true);
+
+    return () => setIsLayoutReady(false);
+  }, []);
 
   const [newExperience, setNewExperience] = useState<IExperienceGroup>({
     company: "",
@@ -123,7 +153,6 @@ export default function ProfileForm() {
     endYear: new Date().getFullYear()
   });
 
-  const auth = getAuth();
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       setUser(user);
@@ -139,13 +168,6 @@ export default function ProfileForm() {
       setProfile(snap.data() as IProfileData);
     }
     setLoading(false);
-  };
-
-  const handleAvatarUpload = async (file: File) => {
-    const storageRef = ref(getStorage(), "avatars/public");
-    await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(storageRef);
-    setProfile((p) => ({ ...p, about: { ...p.about, avatarUrl: url } }));
   };
 
   const handleAddSkillItem = () => {
@@ -239,12 +261,78 @@ export default function ProfileForm() {
     }));
   };
 
-  if (loading)
-    return (
-      <Container>
-        <CircularProgress />
-      </Container>
-    );
+  const handleAvatarDrop = async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file || !user) return;
+    setIsAvatarUploading(true);
+    const url = await uploadFileToStorageAndSaveUrl(file, user.uid, "avatar");
+
+    setProfile((preState) => ({
+      ...preState,
+      about: {
+        ...preState.about,
+        avatarUrl: url
+      }
+    }));
+    setIsAvatarUploading(false);
+    enqueueSnackbar("Upload Success!", { variant: "success" });
+  };
+
+  const handleResumeDrop = async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file || !user) return;
+    setIsFileUploading(true);
+    const url = await uploadFileToStorageAndSaveUrl(file, user.uid, "resume");
+
+    setProfile((preState) => ({
+      ...preState,
+      about: {
+        ...preState.about,
+        resumeUrl: url
+      }
+    }));
+    setIsFileUploading(false);
+    enqueueSnackbar("Upload Success!", { variant: "success" });
+  };
+
+  const {
+    getRootProps: getAvatarRootProps,
+    getInputProps: getAvatarInputProps
+  } = useDropzone({
+    onDrop: handleAvatarDrop,
+    disabled: profile.about.avatarUrl ? true : false,
+    accept: { "image/*": [] }
+  });
+  const {
+    getRootProps: getResumeRootProps,
+    getInputProps: getResumeInputProps
+  } = useDropzone({
+    onDrop: handleResumeDrop,
+    disabled: profile.about.resumeUrl ? true : false,
+    accept: {
+      "application/pdf": []
+    }
+  });
+
+  const deleteAvatarFromFirestore = async () => {
+    if (user) {
+      await deleteFileAndClearUrl(profile.about.avatarUrl, "avatarUrl");
+      setProfile((p) => ({ ...p, about: { ...p.about, avatarUrl: "" } }));
+
+      enqueueSnackbar("Delete Success!", { variant: "success" });
+    }
+  };
+
+  const deleteResumeFromFirestore = async () => {
+    if (user) {
+      await deleteFileAndClearUrl(profile.about.resumeUrl!, "resumeUrl");
+      setProfile((p) => ({ ...p, about: { ...p.about, resumeUrl: "" } }));
+
+      enqueueSnackbar("Delete Success!", { variant: "success" });
+    }
+  };
+
+  if (loading) return <Loading />;
 
   if (!user) {
     return (
@@ -262,6 +350,8 @@ export default function ProfileForm() {
     );
   }
 
+  if (typeof window === "undefined") return null;
+
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -278,21 +368,48 @@ export default function ProfileForm() {
           <Typography>About</Typography>
         </AccordionSummary>
         <AccordionDetails>
-          <Box display="flex" gap={2} alignItems="center">
-            <Avatar
-              src={profile.about.avatarUrl}
-              sx={{ width: 80, height: 80 }}
-            />
-            <IconButton component="label">
-              <PhotoCamera />
-              <input
-                type="file"
-                hidden
-                onChange={(e) =>
-                  e.target.files?.[0] && handleAvatarUpload(e.target.files[0])
-                }
-              />
-            </IconButton>
+          <Box
+            display={"flex"}
+            justifyContent={"center"}
+            flexDirection={"column"}
+          >
+            <Box gap={2} {...getAvatarRootProps()} sx={{ cursor: "pointer" }}>
+              <Box
+                display={"flex"}
+                alignItems={"center"}
+                flexDirection={"column"}
+              >
+                {isAvatarUploading ? (
+                  <CircularProgress size="30px" />
+                ) : (
+                  <>
+                    <Avatar
+                      src={profile.about.avatarUrl}
+                      sx={{ width: 80, height: 80 }}
+                    />
+                    <input {...getAvatarInputProps()} />
+                    {!profile.about.avatarUrl && (
+                      <Typography variant="body2">
+                        Click or drag image to upload avatar
+                      </Typography>
+                    )}
+                  </>
+                )}
+              </Box>
+            </Box>
+            {profile.about.avatarUrl && (
+              <Box width={"100%"} display={"flex"} justifyContent={"center"}>
+                <IconButton
+                  sx={{ maxWidth: "fit-content" }}
+                  aria-label="delete"
+                  size="large"
+                  color="error"
+                  onClick={deleteAvatarFromFirestore}
+                >
+                  <DeleteIcon fontSize="inherit" />
+                </IconButton>
+              </Box>
+            )}
           </Box>
           {["name", "role", "email", "phone", "bio"].map((f, i) => (
             <TextField
@@ -309,6 +426,77 @@ export default function ProfileForm() {
               }
             />
           ))}
+          <TextField
+            label="LinkedIn URL"
+            fullWidth
+            sx={{ mt: 2 }}
+            value={profile.about.linkedin || ""}
+            onChange={(e) =>
+              setProfile((p) => ({
+                ...p,
+                about: { ...p.about, linkedin: e.target.value }
+              }))
+            }
+          />
+          <TextField
+            label="GitHub URL"
+            fullWidth
+            sx={{ mt: 2 }}
+            value={profile.about.github || ""}
+            onChange={(e) =>
+              setProfile((p) => ({
+                ...p,
+                about: { ...p.about, github: e.target.value }
+              }))
+            }
+          />
+          <Box display={"flex"} alignItems={"center"} width={"100%"}>
+            {isFileUploading ? (
+              <CircularProgress size="30px" />
+            ) : (
+              <Box
+                mt={3}
+                {...getResumeRootProps()}
+                sx={{
+                  p: 2,
+                  cursor: "pointer"
+                }}
+              >
+                <input {...getResumeInputProps()} />
+
+                {profile.about.resumeUrl ? (
+                  <Typography mt={1} fontSize={14}>
+                    <a
+                      href={profile.about.resumeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Image
+                        src={"/assets/images/pdf_icon.png"}
+                        width={50}
+                        height={50}
+                        alt=""
+                      />
+                    </a>
+                  </Typography>
+                ) : (
+                  <Typography variant="body2">
+                    Click or drag file to upload resume (.pdf)
+                  </Typography>
+                )}
+              </Box>
+            )}
+            {profile.about.resumeUrl ? (
+              <IconButton
+                aria-label="delete"
+                size="large"
+                color="error"
+                onClick={deleteResumeFromFirestore}
+              >
+                <DeleteIcon fontSize="inherit" />
+              </IconButton>
+            ) : null}
+          </Box>
         </AccordionDetails>
       </Accordion>
 
@@ -391,15 +579,20 @@ export default function ProfileForm() {
                 setNewExperience((p) => ({ ...p, role: e.target.value }))
               }
             />
-            <TextField
+
+            <CustomEditor isLayoutReady={isLayoutReady} />
+            {/* <TextField
               label="Description"
               multiline
               minRows={2}
               value={newExperience.description}
               onChange={(e) =>
-                setNewExperience((p) => ({ ...p, description: e.target.value }))
+                setNewExperience((p) => ({
+                  ...p,
+                  description: e.target.value
+                }))
               }
-            />
+            /> */}
             <Stack direction="row" spacing={2}>
               <TextField
                 select
@@ -444,7 +637,10 @@ export default function ProfileForm() {
                 label="End Month"
                 value={newExperience.endMonth}
                 onChange={(e) =>
-                  setNewExperience((p) => ({ ...p, endMonth: e.target.value }))
+                  setNewExperience((p) => ({
+                    ...p,
+                    endMonth: e.target.value
+                  }))
                 }
                 sx={{ flex: 1 }}
               >
@@ -459,7 +655,10 @@ export default function ProfileForm() {
                 label="End Year"
                 value={newExperience.endYear}
                 onChange={(e) =>
-                  setNewExperience((p) => ({ ...p, endYear: +e.target.value }))
+                  setNewExperience((p) => ({
+                    ...p,
+                    endYear: +e.target.value
+                  }))
                 }
                 sx={{ flex: 1 }}
               >
@@ -517,7 +716,10 @@ export default function ProfileForm() {
               label="Institution"
               value={newEducation.institution}
               onChange={(e) =>
-                setNewEducation((p) => ({ ...p, institution: e.target.value }))
+                setNewEducation((p) => ({
+                  ...p,
+                  institution: e.target.value
+                }))
               }
             />
             <TextField
@@ -540,7 +742,10 @@ export default function ProfileForm() {
                 label="Start Year"
                 value={newEducation.startYear}
                 onChange={(e) =>
-                  setNewEducation((p) => ({ ...p, startYear: +e.target.value }))
+                  setNewEducation((p) => ({
+                    ...p,
+                    startYear: +e.target.value
+                  }))
                 }
                 sx={{ flex: 1 }}
               >
@@ -612,23 +817,31 @@ export default function ProfileForm() {
           size="large"
           onClick={async () => {
             if (!user) return;
-            await setDoc(doc(db, "profiles", "public"), profile, {
-              merge: true
-            });
-            setSuccessSection("all");
-            setTimeout(() => setSuccessSection(null), 3000);
+
+            await setDoc(
+              doc(db, CONSTANTS.collecttion, CONSTANTS.document),
+              profile,
+              {
+                merge: true
+              }
+            );
+            // setSuccessSection("all");
+            enqueueSnackbar("Upload Success!", { variant: "success" });
+
+            // setTimeout(() => setSuccessSection(null), 3000);
           }}
         >
           Save All
         </Button>
       </Box>
 
-      <Snackbar
-        open={!!successSection}
-        autoHideDuration={3000}
-        onClose={() => setSuccessSection(null)}
-        message={`Updated ${successSection} section!`}
-      />
+      {/* <Snackbar
+          open={!!successSection}
+          autoHideDuration={3000}
+          onClose={() => setSuccessSection(null)}
+          message={`Updated ${successSection} section!`}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        /> */}
     </Container>
   );
 }

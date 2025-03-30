@@ -98,11 +98,6 @@ export default function NavigationStepper({
   sections,
   onSelect
 }: NavigationStepperProps) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
-
-  console.log("theme :>> ", theme.palette.mode);
-
   return (
     <Box
       sx={{
@@ -126,7 +121,12 @@ export default function NavigationStepper({
               <StepLabel
                 StepIconComponent={QontoStepIcon}
                 onClick={() => onSelect(name)}
-                sx={{ cursor: "pointer" }}
+                sx={{
+                  cursor: "pointer",
+                  "& .MuiStepLabel-label": {
+                    color: name === active ? "#ec4899" : undefined
+                  }
+                }}
               >
                 {name.toUpperCase()}
               </StepLabel>
