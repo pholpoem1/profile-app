@@ -1,5 +1,6 @@
-import { Box, Container, FormControlLabel, Switch } from "@mui/material";
-
+import { Box, Container, IconButton } from "@mui/material";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import NightlightIcon from "@mui/icons-material/Nightlight";
 import { Lato } from "next/font/google";
 
 const lato = Lato({
@@ -22,15 +23,13 @@ const LayoutPage = ({
     <main className={lato.className}>
       <Box>
         <Box sx={{ position: "fixed", top: 8, right: 16, zIndex: 1300 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={darkMode}
-                onChange={() => setDarkMode(!darkMode)}
-              />
-            }
-            label="Dark Mode"
-          />
+          <IconButton onClick={() => setDarkMode(!darkMode)}>
+            {darkMode ? (
+              <LightModeIcon fontSize="large" sx={{ color: "#f5b942" }} />
+            ) : (
+              <NightlightIcon fontSize="large" sx={{ color: "black" }} />
+            )}
+          </IconButton>
         </Box>
         <Container
           maxWidth="lg"

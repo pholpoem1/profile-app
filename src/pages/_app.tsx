@@ -1,6 +1,6 @@
 import LayoutPage from "@/components/Layout";
 import "@/styles/globals.css";
-import { CssBaseline, ThemeProvider } from "@mui/material";
+import { CssBaseline, ThemeProvider, GlobalStyles } from "@mui/material";
 import type { AppProps } from "next/app";
 import { SnackbarProvider } from "notistack";
 import { useEffect, useMemo, useState } from "react";
@@ -23,6 +23,17 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <GlobalStyles
+        styles={{
+          body: {
+            backgroundImage: theme.customBackground.gradient,
+            backgroundAttachment: "fixed",
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+            transition: "background-image 0.5s ease-in-out"
+          }
+        }}
+      />
       <SnackbarProvider>
         <LayoutPage setDarkMode={setDarkMode} darkMode={darkMode}>
           <Component {...pageProps} />
