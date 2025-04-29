@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -16,35 +16,33 @@ import {
   Divider,
   Stack,
   FormControlLabel,
-  Checkbox
-} from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import EditIcon from "@mui/icons-material/Edit";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import {
-  signInWithPopup,
-  GoogleAuthProvider,
-  signOut,
-  onAuthStateChanged,
-  User
-} from "firebase/auth";
-import { auth, db } from "@/libs/firebase";
-import AddIcon from "@mui/icons-material/Add";
-import { useDropzone } from "react-dropzone";
-import { uploadFileToStorageAndSaveUrl } from "@/utils/uploadFile";
-import { CONSTANTS } from "@/utils/constants";
-import { deleteFileAndClearUrl } from "@/utils/deleteFile";
-import { useSnackbar } from "notistack";
-import Image from "next/image";
-import Loading from "@/components/Loading";
-import InputText from "@/components/Input/InputText";
-import dynamic from "next/dynamic";
-import InputSelect from "@/components/Input/InputSelect";
-import HighlightOffRoundedIcon from "@mui/icons-material/HighlightOffRounded";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+  Checkbox,
+  Grid,
+  Badge,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import EditIcon from '@mui/icons-material/Edit';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { auth, db } from '@/libs/firebase';
+import AddIcon from '@mui/icons-material/Add';
+import { useDropzone } from 'react-dropzone';
+import { uploadFileToStorageAndSaveUrl } from '@/utils/uploadFile';
+import { CONSTANTS } from '@/utils/constants';
+import { deleteFileAndClearUrl } from '@/utils/deleteFile';
+import { useSnackbar } from 'notistack';
+import Image from 'next/image';
+import Loading from '@/components/Loading';
+import InputText from '@/components/Input/InputText';
+import dynamic from 'next/dynamic';
+import InputSelect from '@/components/Input/InputSelect';
+import HighlightOffRoundedIcon from '@mui/icons-material/HighlightOffRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import StackIcon from 'tech-stack-icons';
+import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
 
-const RitchText = dynamic(() => import("@/components/Input/RitchText"), {
-  ssr: false
+const RitchText = dynamic(() => import('@/components/Input/RitchText'), {
+  ssr: false,
 });
 
 interface IEducationItem {
@@ -54,10 +52,10 @@ interface IEducationItem {
   startYear: string;
   endYear: string;
 }
-interface ISkillGroup {
-  category: string;
-  items: string[];
-}
+// interface ISkillGroup {
+//   category: string;
+//   items: string[];
+// }
 interface IExperienceGroup {
   company: string;
   role: string;
@@ -80,7 +78,7 @@ interface IProfileData {
     github: string;
     resumeUrl?: string;
   };
-  skills: ISkillGroup[];
+  skills: string[];
   experience: IExperienceGroup[];
   education: IEducationItem[];
 }
@@ -90,71 +88,59 @@ const years = [
     const year = new Date().getFullYear() - i;
     return {
       label: year.toString(),
-      value: year.toString()
+      value: year.toString(),
     };
-  })
+  }),
 ];
 
-const months = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec"
-].map((month) => ({ label: month, value: month }));
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month) => ({
+  label: month,
+  value: month,
+}));
 
 export default function ProfileForm() {
   const { enqueueSnackbar } = useSnackbar();
 
   const [profile, setProfile] = useState<IProfileData>({
     about: {
-      name: "",
-      role: "",
-      email: "",
-      phone: "",
-      bio: "",
-      avatarUrl: "",
-      linkedin: "",
-      github: "",
-      resumeUrl: ""
+      name: '',
+      role: '',
+      email: '',
+      phone: '',
+      bio: '',
+      avatarUrl: '',
+      linkedin: '',
+      github: '',
+      resumeUrl: '',
     },
     skills: [],
     experience: [],
-    education: []
+    education: [],
   });
-  const [newSkillCategory, setNewSkillCategory] = useState("");
-  const [newSkillItem, setNewSkillItem] = useState("");
+  const [newSkillCategory, setNewSkillCategory] = useState('');
+  const [newSkillItem, setNewSkillItem] = useState('');
   const [currentSkillItems, setCurrentSkillItems] = useState<string[]>([]);
   const [newEducation, setNewEducation] = useState<IEducationItem>({
-    institution: "",
-    faculty: "",
-    major: "",
-    startYear: "",
-    endYear: ""
+    institution: '',
+    faculty: '',
+    major: '',
+    startYear: '',
+    endYear: '',
   });
-  const [editingEducationIndex, setEditingEducationIndex] = useState<
-    number | null
-  >(null);
+  const [editingEducationIndex, setEditingEducationIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
   const [isFileUploading, setIsFileUploading] = useState(false);
 
   const [newExperience, setNewExperience] = useState<IExperienceGroup>({
-    company: "",
-    role: "",
-    description: "",
-    startMonth: "",
-    startYear: "",
-    endMonth: "",
-    endYear: ""
+    company: '',
+    role: '',
+    description: '',
+    startMonth: '',
+    startYear: '',
+    endMonth: '',
+    endYear: '',
   });
 
   useEffect(() => {
@@ -167,9 +153,7 @@ export default function ProfileForm() {
   }, []);
 
   const fetchProfile = async () => {
-    const snap = await getDoc(
-      doc(db, CONSTANTS.collecttion, CONSTANTS.document)
-    );
+    const snap = await getDoc(doc(db, CONSTANTS.collecttion, CONSTANTS.document));
     if (snap.exists()) {
       setProfile(snap.data() as IProfileData);
     }
@@ -180,15 +164,15 @@ export default function ProfileForm() {
     if (!user) return;
 
     await setDoc(doc(db, CONSTANTS.collecttion, CONSTANTS.document), profile, {
-      merge: true
+      merge: true,
     });
-    enqueueSnackbar("Upload Success!", { variant: "success" });
+    enqueueSnackbar('Upload Success!', { variant: 'success' });
   };
 
   const handleAddSkillItem = () => {
     if (newSkillItem.trim()) {
       setCurrentSkillItems([...currentSkillItems, newSkillItem.trim()]);
-      setNewSkillItem("");
+      setNewSkillItem('');
     }
   };
 
@@ -198,25 +182,24 @@ export default function ProfileForm() {
       ...p,
       skills: [
         ...p.skills,
-        { category: newSkillCategory, items: currentSkillItems }
-      ]
+        // { category: newSkillCategory, items: currentSkillItems }
+      ],
     }));
-    setNewSkillCategory("");
+    setNewSkillCategory('');
     setCurrentSkillItems([]);
   };
 
   const handleEducationSave = () => {
     const updated = profile.education ? [...profile.education] : [];
-    if (editingEducationIndex !== null)
-      updated[editingEducationIndex] = newEducation;
+    if (editingEducationIndex !== null) updated[editingEducationIndex] = newEducation;
     else updated.push(newEducation);
     setProfile((p) => ({ ...p, education: updated }));
     setNewEducation({
-      institution: "",
-      faculty: "",
-      major: "",
-      startYear: "",
-      endYear: ""
+      institution: '',
+      faculty: '',
+      major: '',
+      startYear: '',
+      endYear: '',
     });
     setEditingEducationIndex(null);
   };
@@ -224,7 +207,7 @@ export default function ProfileForm() {
   const handleExperienceSave = () => {
     const { company, role, description, startMonth, endMonth } = newExperience;
     if (!company || !role || !description || !startMonth || !endMonth) {
-      alert("Please fill in all fields.");
+      alert('Please fill in all fields.');
       return;
     }
     // if (
@@ -237,18 +220,16 @@ export default function ProfileForm() {
     // }
     setProfile((prev) => ({
       ...prev,
-      experience: prev.experience
-        ? [...prev.experience, newExperience]
-        : [newExperience]
+      experience: prev.experience ? [...prev.experience, newExperience] : [newExperience],
     }));
     setNewExperience({
-      company: "",
-      role: "",
-      description: "",
-      startMonth: "",
-      startYear: "",
-      endMonth: "",
-      endYear: ""
+      company: '',
+      role: '',
+      description: '',
+      startMonth: '',
+      startYear: '',
+      endMonth: '',
+      endYear: '',
     });
   };
 
@@ -257,14 +238,14 @@ export default function ProfileForm() {
     setNewExperience(exp);
     setProfile((prev) => ({
       ...prev,
-      experience: prev.experience.filter((_, i) => i !== index)
+      experience: prev.experience.filter((_, i) => i !== index),
     }));
   };
 
   const handleDeleteExperience = (index: number) => {
     setProfile((prev) => ({
       ...prev,
-      experience: prev.experience.filter((_, i) => i !== index)
+      experience: prev.experience.filter((_, i) => i !== index),
     }));
   };
 
@@ -272,70 +253,64 @@ export default function ProfileForm() {
     const file = acceptedFiles[0];
     if (!file || !user) return;
     setIsAvatarUploading(true);
-    const url = await uploadFileToStorageAndSaveUrl(file, user.uid, "avatar");
+    const url = await uploadFileToStorageAndSaveUrl(file, user.uid, 'avatar');
 
     setProfile((preState) => ({
       ...preState,
       about: {
         ...preState.about,
-        avatarUrl: url
-      }
+        avatarUrl: url,
+      },
     }));
     setIsAvatarUploading(false);
-    enqueueSnackbar("Upload Success!", { variant: "success" });
+    enqueueSnackbar('Upload Success!', { variant: 'success' });
   };
 
   const handleResumeDrop = async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (!file || !user) return;
     setIsFileUploading(true);
-    const url = await uploadFileToStorageAndSaveUrl(file, user.uid, "resume");
+    const url = await uploadFileToStorageAndSaveUrl(file, user.uid, 'resume');
 
     setProfile((preState) => ({
       ...preState,
       about: {
         ...preState.about,
-        resumeUrl: url
-      }
+        resumeUrl: url,
+      },
     }));
     setIsFileUploading(false);
-    enqueueSnackbar("Upload Success!", { variant: "success" });
+    enqueueSnackbar('Upload Success!', { variant: 'success' });
   };
 
-  const {
-    getRootProps: getAvatarRootProps,
-    getInputProps: getAvatarInputProps
-  } = useDropzone({
+  const { getRootProps: getAvatarRootProps, getInputProps: getAvatarInputProps } = useDropzone({
     onDrop: handleAvatarDrop,
     disabled: profile.about.avatarUrl ? true : false,
-    accept: { "image/*": [] }
+    accept: { 'image/*': [] },
   });
-  const {
-    getRootProps: getResumeRootProps,
-    getInputProps: getResumeInputProps
-  } = useDropzone({
+  const { getRootProps: getResumeRootProps, getInputProps: getResumeInputProps } = useDropzone({
     onDrop: handleResumeDrop,
     disabled: profile.about.resumeUrl ? true : false,
     accept: {
-      "application/pdf": []
-    }
+      'application/pdf': [],
+    },
   });
 
   const deleteAvatarFromFirestore = async () => {
     if (user) {
-      await deleteFileAndClearUrl(profile.about.avatarUrl, "avatarUrl");
-      setProfile((p) => ({ ...p, about: { ...p.about, avatarUrl: "" } }));
+      await deleteFileAndClearUrl(profile.about.avatarUrl, 'avatarUrl');
+      setProfile((p) => ({ ...p, about: { ...p.about, avatarUrl: '' } }));
 
-      enqueueSnackbar("Delete Success!", { variant: "success" });
+      enqueueSnackbar('Delete Success!', { variant: 'success' });
     }
   };
 
   const deleteResumeFromFirestore = async () => {
     if (user) {
-      await deleteFileAndClearUrl(profile.about.resumeUrl!, "resumeUrl");
-      setProfile((p) => ({ ...p, about: { ...p.about, resumeUrl: "" } }));
+      await deleteFileAndClearUrl(profile.about.resumeUrl!, 'resumeUrl');
+      setProfile((p) => ({ ...p, about: { ...p.about, resumeUrl: '' } }));
 
-      enqueueSnackbar("Delete Success!", { variant: "success" });
+      enqueueSnackbar('Delete Success!', { variant: 'success' });
     }
   };
 
@@ -343,14 +318,11 @@ export default function ProfileForm() {
 
   if (!user) {
     return (
-      <Container sx={{ textAlign: "center", py: 10 }}>
+      <Container sx={{ textAlign: 'center', py: 10 }}>
         <Typography variant="h5" gutterBottom>
           Sign in to edit your profile
         </Typography>
-        <Button
-          variant="contained"
-          onClick={() => signInWithPopup(auth, new GoogleAuthProvider())}
-        >
+        <Button variant="contained" onClick={() => signInWithPopup(auth, new GoogleAuthProvider())}>
           Sign in with Google
         </Button>
       </Container>
@@ -360,7 +332,7 @@ export default function ProfileForm() {
   const handleRemoveSkillGroup = (index: number) => {
     setProfile((prev) => ({
       ...prev,
-      skills: prev.skills.filter((_, i) => i !== index)
+      skills: prev.skills.filter((_, i) => i !== index),
     }));
   };
 
@@ -380,17 +352,9 @@ export default function ProfileForm() {
             <Typography>About</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Box
-              display={"flex"}
-              justifyContent={"center"}
-              flexDirection={"column"}
-            >
-              <Box gap={2} {...getAvatarRootProps()} sx={{ cursor: "pointer" }}>
-                <Box
-                  display={"flex"}
-                  alignItems={"center"}
-                  flexDirection={"column"}
-                >
+            <Box display={'flex'} justifyContent={'center'} flexDirection={'column'}>
+              <Box gap={2} {...getAvatarRootProps()} sx={{ cursor: 'pointer' }}>
+                <Box display={'flex'} alignItems={'center'} flexDirection={'column'}>
                   {isAvatarUploading ? (
                     <CircularProgress size="30px" />
                   ) : (
@@ -400,24 +364,22 @@ export default function ProfileForm() {
                         sx={{
                           width: 150,
                           height: 150,
-                          borderRadius: "16px",
-                          border: "2px solid white"
+                          borderRadius: '16px',
+                          border: '2px solid white',
                         }}
                       />
                       <input {...getAvatarInputProps()} />
                       {!profile.about.avatarUrl && (
-                        <Typography variant="body2">
-                          Click or drag image to upload avatar
-                        </Typography>
+                        <Typography variant="body2">Click or drag image to upload avatar</Typography>
                       )}
                     </>
                   )}
                 </Box>
               </Box>
               {profile.about.avatarUrl && (
-                <Box width={"100%"} display={"flex"} justifyContent={"center"}>
+                <Box width={'100%'} display={'flex'} justifyContent={'center'}>
                   <IconButton
-                    sx={{ maxWidth: "fit-content" }}
+                    sx={{ maxWidth: 'fit-content' }}
                     aria-label="delete"
                     size="large"
                     color="error"
@@ -429,23 +391,19 @@ export default function ProfileForm() {
               )}
             </Box>
             <Stack spacing={2}>
-              {["Name", "Role", "Email", "Phone"].map((f, i) => {
+              {['Name', 'Role', 'Email', 'Phone'].map((f, i) => {
                 return (
                   <InputText
                     key={i}
                     label={f}
-                    value={
-                      profile.about[
-                        f.toLowerCase() as keyof typeof profile.about
-                      ]
-                    }
+                    value={profile.about[f.toLowerCase() as keyof typeof profile.about]}
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
                         about: {
                           ...p.about,
-                          [f.toLowerCase()]: e?.target.value
-                        }
+                          [f.toLowerCase()]: e?.target.value,
+                        },
                       }))
                     }
                   />
@@ -457,8 +415,8 @@ export default function ProfileForm() {
                     ...p,
                     about: {
                       ...p.about,
-                      bio: value as string
-                    }
+                      bio: value as string,
+                    },
                   }))
                 }
                 label="Bio"
@@ -466,26 +424,26 @@ export default function ProfileForm() {
 
               <InputText
                 label="LinkedIn URL"
-                value={profile.about.linkedin || ""}
+                value={profile.about.linkedin || ''}
                 onChange={(e) =>
                   setProfile((p) => ({
                     ...p,
-                    about: { ...p.about, linkedin: e?.target.value || "" }
+                    about: { ...p.about, linkedin: e?.target.value || '' },
                   }))
                 }
               />
               <InputText
                 label="GitHub URL"
-                value={profile.about.github || ""}
+                value={profile.about.github || ''}
                 onChange={(e) =>
                   setProfile((p) => ({
                     ...p,
-                    about: { ...p.about, github: e?.target.value || "" }
+                    about: { ...p.about, github: e?.target.value || '' },
                   }))
                 }
               />
             </Stack>
-            <Box display={"flex"} alignItems={"center"} width={"100%"}>
+            <Box display={'flex'} alignItems={'center'} width={'100%'}>
               {isFileUploading ? (
                 <CircularProgress size="30px" />
               ) : (
@@ -494,40 +452,24 @@ export default function ProfileForm() {
                   {...getResumeRootProps()}
                   sx={{
                     p: 2,
-                    cursor: "pointer"
+                    cursor: 'pointer',
                   }}
                 >
                   <input {...getResumeInputProps()} />
 
                   {profile.about.resumeUrl ? (
                     <Typography mt={1} fontSize={14}>
-                      <a
-                        href={profile.about.resumeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Image
-                          src={"/assets/images/pdf_icon.png"}
-                          width={50}
-                          height={50}
-                          alt=""
-                        />
+                      <a href={profile.about.resumeUrl} target="_blank" rel="noopener noreferrer">
+                        <Image src={'/assets/images/pdf_icon.png'} width={50} height={50} alt="" />
                       </a>
                     </Typography>
                   ) : (
-                    <Typography variant="body2">
-                      Click or drag file to upload resume (.pdf)
-                    </Typography>
+                    <Typography variant="body2">Click or drag file to upload resume (.pdf)</Typography>
                   )}
                 </Box>
               )}
               {profile.about.resumeUrl ? (
-                <IconButton
-                  aria-label="delete"
-                  size="large"
-                  color="error"
-                  onClick={deleteResumeFromFirestore}
-                >
+                <IconButton aria-label="delete" size="large" color="error" onClick={deleteResumeFromFirestore}>
                   <HighlightOffRoundedIcon fontSize="inherit" />
                 </IconButton>
               ) : null}
@@ -540,61 +482,63 @@ export default function ProfileForm() {
             <Typography>Skills</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            {profile.skills?.map((group, i) => (
+            <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
+              {profile.skills?.map((skill, index) => (
+                <Grid key={index} size={{ xs: 2, sm: 4, md: 4 }}>
+                  <StackIcon name={skill} />;
+                </Grid>
+              ))}
+            </Grid>
+            {/* {profile.skills?.map((skill, i) => (
               <Box key={i} mb={2}>
-                <Box display={"flex"} alignItems={"center"}>
+                <StackIcon name={skill} />;
+              <Box display={'flex'} alignItems={'center'}>
                   <Typography variant="subtitle1" fontWeight="bold">
-                    {group.category}
+                    {group}
                   </Typography>
                   <IconButton>
-                    <CloseRoundedIcon
-                      onClick={() => handleRemoveSkillGroup(i)}
-                      color="error"
-                    />
+                    <CloseRoundedIcon onClick={() => handleRemoveSkillGroup(i)} color="error" />
                   </IconButton>
                 </Box>
-                <List dense>
-                  {group.items?.map((item, j) => (
-                    <ListItem key={j}>
-                      <ListItemText primary={item} />
-                    </ListItem>
-                  ))}
-                </List>
               </Box>
             ))}
+               */}
 
             <Divider sx={{ my: 2 }} />
             <Stack spacing={2}>
-              <Typography variant="subtitle1" fontWeight="bold">
-                Add New Skill Group
-              </Typography>
-              <InputText
-                label="Category"
-                value={newSkillCategory}
-                onChange={(e) => setNewSkillCategory(e?.target.value || "")}
-              />
-              <Box display={"flex"} alignItems={"end"}>
+              <Box display={'flex'} alignItems={'end'}>
                 <InputText
                   label="Skill"
                   value={newSkillItem}
-                  onChange={(e) => setNewSkillItem(e?.target.value || "")}
+                  onChange={(e) => setNewSkillItem(e?.target.value || '')}
                 />
                 <IconButton aria-label="add" onClick={handleAddSkillItem}>
                   <AddIcon />
                 </IconButton>
               </Box>
-              <List dense>
-                {currentSkillItems?.map((item, idx) => {
-                  return (
-                    <ListItem key={idx}>
-                      <ListItemText primary={item} />
-                    </ListItem>
-                  );
-                })}
-              </List>
+              <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
+                {currentSkillItems?.map((skill, index) => (
+                  <Grid key={index} size={{ xs: 2, sm: 4, md: 4 }}>
+                    <Badge
+                      badgeContent={
+                        <IconButton
+                          color="error"
+                          onClick={() => {
+                            setCurrentSkillItems((prev) => prev.filter((_, i) => i !== index));
+                          }}
+                        >
+                          <ClearRoundedIcon fontSize="small" />
+                        </IconButton>
+                      }
+                    >
+                      <StackIcon style={{ width: '50px', height: '50px' }} name={skill} />
+                    </Badge>
+                  </Grid>
+                ))}
+              </Grid>
             </Stack>
             <Button onClick={handleAddSkillGroup} startIcon={<AddIcon />}>
-              Add Skill Group
+              Add Skill Name
             </Button>
           </AccordionDetails>
         </Accordion>
@@ -607,17 +551,13 @@ export default function ProfileForm() {
             <Stack spacing={2}>
               <InputText
                 value={newExperience.company}
-                onChange={(e: any) =>
-                  setNewExperience((p) => ({ ...p, company: e.target.value }))
-                }
+                onChange={(e: any) => setNewExperience((p) => ({ ...p, company: e.target.value }))}
                 label="Company"
               />
 
               <InputText
                 value={newExperience.role}
-                onChange={(e: any) =>
-                  setNewExperience((p) => ({ ...p, role: e.target.value }))
-                }
+                onChange={(e: any) => setNewExperience((p) => ({ ...p, role: e.target.value }))}
                 label="Role"
               />
 
@@ -625,7 +565,7 @@ export default function ProfileForm() {
                 onChange={(value) =>
                   setNewExperience((p) => ({
                     ...p,
-                    description: value as string
+                    description: value as string,
                   }))
                 }
                 label="Description"
@@ -638,7 +578,7 @@ export default function ProfileForm() {
                   onChange={(e) =>
                     setNewExperience((p) => ({
                       ...p,
-                      startMonth: e.target.value
+                      startMonth: e.target.value,
                     }))
                   }
                 />
@@ -649,7 +589,7 @@ export default function ProfileForm() {
                   onChange={(e) =>
                     setNewExperience((p) => ({
                       ...p,
-                      startYear: e.target.value
+                      startYear: e.target.value,
                     }))
                   }
                 />
@@ -664,9 +604,9 @@ export default function ProfileForm() {
                           ...p,
                           isCurrent: e.target.checked,
                           ...(e.target.checked === true && {
-                            endMonth: "",
-                            endYear: ""
-                          })
+                            endMonth: '',
+                            endYear: '',
+                          }),
                         }));
                       }}
                     />
@@ -683,7 +623,7 @@ export default function ProfileForm() {
                   onChange={(e) =>
                     setNewExperience((p) => ({
                       ...p,
-                      endMonth: e.target.value
+                      endMonth: e.target.value,
                     }))
                   }
                   isDisabled={newExperience.isCurrent}
@@ -695,36 +635,24 @@ export default function ProfileForm() {
                   onChange={(e) =>
                     setNewExperience((p) => ({
                       ...p,
-                      endMonth: e.target.value
+                      endMonth: e.target.value,
                     }))
                   }
                   isDisabled={newExperience.isCurrent}
                 />
               </Stack>
             </Stack>
-            <Button
-              sx={{ mt: 2 }}
-              onClick={handleExperienceSave}
-              startIcon={<AddIcon />}
-            >
+            <Button sx={{ mt: 2 }} onClick={handleExperienceSave} startIcon={<AddIcon />}>
               Add Experience
             </Button>
             {profile.experience?.map((exp, i) => {
               return (
-                <Box
-                  key={i}
-                  mt={2}
-                  p={2}
-                  border={1}
-                  borderColor="divider"
-                  borderRadius={1}
-                >
+                <Box key={i} mt={2} p={2} border={1} borderColor="divider" borderRadius={1}>
                   <Typography fontWeight="bold">
                     {exp.company} - {exp.role}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {exp.startMonth} {exp.startYear} - {exp.endMonth}{" "}
-                    {exp.endYear}
+                    {exp.startMonth} {exp.startYear} - {exp.endMonth} {exp.endYear}
                   </Typography>
                   <Typography sx={{ mt: 1 }}>{exp.description}</Typography>
                   <Box textAlign="right">
@@ -752,7 +680,7 @@ export default function ProfileForm() {
                 onChange={(e: any) =>
                   setNewEducation((p) => ({
                     ...p,
-                    institution: e.target.value
+                    institution: e.target.value,
                   }))
                 }
                 label="Institution"
@@ -763,7 +691,7 @@ export default function ProfileForm() {
                 onChange={(e) =>
                   setNewEducation((p) => ({
                     ...p,
-                    faculty: e?.target.value || ""
+                    faculty: e?.target.value || '',
                   }))
                 }
               />
@@ -773,7 +701,7 @@ export default function ProfileForm() {
                 onChange={(e) =>
                   setNewEducation((p) => ({
                     ...p,
-                    major: e?.target.value || ""
+                    major: e?.target.value || '',
                   }))
                 }
               />
@@ -785,7 +713,7 @@ export default function ProfileForm() {
                   onChange={(e) =>
                     setNewExperience((p) => ({
                       ...p,
-                      startYear: e.target.value
+                      startYear: e.target.value,
                     }))
                   }
                 />
@@ -796,7 +724,7 @@ export default function ProfileForm() {
                   onChange={(e) =>
                     setNewExperience((p) => ({
                       ...p,
-                      endMonth: e.target.value
+                      endMonth: e.target.value,
                     }))
                   }
                 />
@@ -829,7 +757,7 @@ export default function ProfileForm() {
                     onClick={() =>
                       setProfile((p) => ({
                         ...p,
-                        education: p.education.filter((_, j) => j !== i)
+                        education: p.education.filter((_, j) => j !== i),
                       }))
                     }
                   >
