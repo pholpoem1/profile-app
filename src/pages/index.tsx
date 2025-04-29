@@ -1,59 +1,35 @@
-import { useState, useEffect, useRef, RefObject } from "react";
-import {
-  Box,
-  Typography,
-  Stack,
-  useMediaQuery,
-  useTheme,
-  LinearProgress,
-  Avatar,
-  CircularProgress,
-  Divider,
-  Drawer,
-  IconButton,
-  Container
-} from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/libs/firebase";
-import NavigationStepper from "@/components/NavigationStepper";
-import Loading from "@/components/Loading";
+import { useState, useEffect, useRef, RefObject } from 'react';
+import { Box, Typography, Stack, useMediaQuery, useTheme, Avatar, Divider } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/libs/firebase';
+import Loading from '@/components/Loading';
+import { SECTIONS_MENU } from '@/utils/constants';
+import NavigationStepper from '@/components/NavigationStepper';
 
-const sections = [
-  "about",
-  "skills",
-  "experience",
-  "education"
-  // "contact"
-] as const;
+const sections = SECTIONS_MENU;
 
 export type SectionKey = (typeof sections)[number];
 
 export default function Home() {
-  const sectionRefs: Record<
-    SectionKey,
-    RefObject<HTMLDivElement>
-  > = Object.fromEntries(
+  const sectionRefs: Record<SectionKey, RefObject<HTMLDivElement>> = Object.fromEntries(
     sections.map((key) => [key, useRef<HTMLDivElement>(null)])
   ) as Record<SectionKey, RefObject<HTMLDivElement>>;
-
-  const [active, setActive] = useState<SectionKey>("about");
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const [active, setActive] = useState<SectionKey>('about');
   const [data, setData] = useState<Partial<Record<SectionKey, any>>>({});
   const [loading, setLoading] = useState<boolean>(true);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
     const fetchAllSections = async () => {
       try {
-        const docSnap = await getDoc(doc(db, "profiles", "public"));
+        const docSnap = await getDoc(doc(db, 'profiles', 'public'));
         if (docSnap.exists()) {
           setData(docSnap.data());
         }
       } catch (e) {
-        console.error("Error loading data:", e);
+        console.error('Error loading data:', e);
       } finally {
         setLoading(false);
       }
@@ -61,40 +37,36 @@ export default function Home() {
     fetchAllSections();
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const docHeight =
-        document.documentElement.scrollHeight - window.innerHeight;
-      const progress = (scrollTop / docHeight) * 100;
-      setScrollProgress(progress);
+  // useEffect(() => {
+  //   const handleScroll = () => {
+  //     const scrollTop = window.scrollY;
+  //     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  //     const progress = (scrollTop / docHeight) * 100;
+  //     setScrollProgress(progress);
 
-      for (const key of sections) {
-        const ref = sectionRefs[key];
-        if (ref.current) {
-          const rect = ref.current.getBoundingClientRect();
-          if (rect.top >= 0 && rect.top < window.innerHeight / 2) {
-            setActive(key);
-            break;
-          }
-        }
-      }
-    };
+  //     for (const key of sections) {
+  //       const ref = sectionRefs[key];
+  //       if (ref.current) {
+  //         const rect = ref.current.getBoundingClientRect();
+  //         if (rect.top >= 0 && rect.top < window.innerHeight / 2) {
+  //           setActive(key);
+  //           break;
+  //         }
+  //       }
+  //     }
+  //   };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  //   window.addEventListener('scroll', handleScroll);
+  //   return () => window.removeEventListener('scroll', handleScroll);
+  // }, []);
 
-  const scrollToSection = (
-    ref: RefObject<HTMLElement | null>,
-    name: SectionKey
-  ) => {
-    if (ref.current) {
-      ref.current.scrollIntoView({ behavior: "smooth" });
-      setActive(name);
-      if (isMobile) setDrawerOpen(false);
-    }
-  };
+  // const scrollToSection = (ref: RefObject<HTMLElement | null>, name: SectionKey) => {
+  //   if (ref.current) {
+  //     ref.current.scrollIntoView({ behavior: 'smooth' });
+  //     setActive(name);
+  //     if (isMobile) setDrawerOpen(false);
+  //   }
+  // };
 
   // const FadeBox = ({ children }: { children: ReactNode }) => (
   //   <motion.div
@@ -114,19 +86,14 @@ export default function Home() {
     if (!content) return null;
 
     switch (section) {
-      case "about":
+      case 'about':
         return (
-          <Stack
-            direction={"column"}
-            spacing={4}
-            alignItems={"flex-start"}
-            width={"100%"}
-          >
+          <Stack direction={'column'} spacing={4} alignItems={'flex-start'} width={'100%'}>
             <Stack
-              direction={"row"}
+              direction={'row'}
               spacing={5}
-              width={"100%"}
-              alignItems={"center"}
+              width={'100%'}
+              alignItems={'center'}
               // justifyContent={"space-between"}
             >
               <Avatar
@@ -134,21 +101,21 @@ export default function Home() {
                 sx={{
                   width: 150,
                   height: 150,
-                  borderRadius: "16px",
-                  border: "2px solid white"
+                  borderRadius: '16px',
+                  border: '2px solid white',
                 }}
               />
               <Stack spacing={1}>
                 <Typography>📧 {content.email}</Typography>
                 <Typography>📞 {content.phone}</Typography>
                 <Typography>
-                  🌐{" "}
+                  🌐{' '}
                   <a target="_blank" href={content.github}>
                     {content.github}
                   </a>
                 </Typography>
                 <Typography>
-                  🌐{" "}
+                  🌐{' '}
                   <a target="_blank" href={content.linkedin}>
                     {content.linkedin}
                   </a>
@@ -162,7 +129,7 @@ export default function Home() {
             </Box>
           </Stack>
         );
-      case "skills":
+      case 'skills':
         return (
           <Stack spacing={3}>
             {Array.isArray(content)
@@ -179,7 +146,7 @@ export default function Home() {
               : null}
           </Stack>
         );
-      case "experience":
+      case 'experience':
         return (
           <Stack spacing={3}>
             {Array.isArray(content)
@@ -189,8 +156,7 @@ export default function Home() {
                       {exp.company} - {exp.role}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {exp.startMonth} {exp.startYear} - {exp.endMonth}{" "}
-                      {exp.endYear}
+                      {exp.startMonth} {exp.startYear} - {exp.endMonth} {exp.endYear}
                     </Typography>
                     <Typography sx={{ mt: 1 }}>{exp.description}</Typography>
                   </Box>
@@ -198,7 +164,7 @@ export default function Home() {
               : null}
           </Stack>
         );
-      case "education":
+      case 'education':
         return (
           <Stack spacing={3}>
             {Array.isArray(content)
@@ -233,27 +199,27 @@ export default function Home() {
 
   return (
     <Box>
-      <LinearProgress
+      {/* <LinearProgress
         variant="determinate"
         value={scrollProgress}
         sx={{
           height: 4,
-          position: "fixed",
+          position: 'fixed',
           top: 0,
           left: 0,
-          width: "100%",
-          zIndex: 1200
+          width: '100%',
+          zIndex: 1200,
         }}
-      />
+      /> */}
 
-      <Box
+      {/* <Box
         sx={{
-          position: "fixed",
+          position: 'fixed',
           top: 8,
           right: 16,
           zIndex: 1300,
-          display: "flex",
-          gap: 2
+          display: 'flex',
+          gap: 2,
         }}
       >
         {isMobile && (
@@ -261,31 +227,19 @@ export default function Home() {
             <MenuIcon />
           </IconButton>
         )}
-      </Box>
+      </Box> */}
 
-      <Box sx={{ display: "flex", flexGrow: 1, mt: { xs: 6, md: 0 } }}>
-        {isMobile ? (
-          <Drawer
-            anchor="left"
-            open={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-          >
-            <NavigationStepper
-              active={active}
-              sections={sections}
-              onSelect={(s) => scrollToSection(sectionRefs[s], s)}
-            />
-          </Drawer>
-        ) : (
-          <Box
+      <Box sx={{ display: 'flex', flexGrow: 1, mt: { xs: 6, md: 0 } }}>
+        {/* {!isMobile && (
+           <Box
             sx={{
               width: 220,
-              position: "fixed",
+              position: 'fixed',
               top: 64,
               left: 0,
               // height: "100vh",
-              overflowY: "auto",
-              zIndex: 1100
+              overflowY: 'auto',
+              zIndex: 1100,
             }}
           >
             <NavigationStepper
@@ -294,16 +248,16 @@ export default function Home() {
               onSelect={(s) => scrollToSection(sectionRefs[s], s)}
             />
           </Box>
-        )}
+        )} */}
 
-        <Box sx={{ flex: 1, ml: { xs: 0, md: "220px" } }}>
+        <Box sx={{ flex: 1, ml: { xs: 0, md: '220px' } }}>
           {sections.map((section) => {
             return (
               <Box
                 key={section}
                 ref={sectionRefs[section]}
                 data-section={section}
-                sx={{ minHeight: "100vh", py: 10, px: { xs: 2, md: 4 } }}
+                sx={{ minHeight: '100vh', py: 10, px: { xs: 2, md: 4 } }}
               >
                 <Typography variant="h4" gutterBottom>
                   {section.toUpperCase()}
