@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, RefObject } from 'react';
 import { Box, Typography, Stack, useMediaQuery, useTheme, Avatar, Divider } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/libs/firebase';
 import Loading from '@/components/Loading';
 import { SECTIONS_MENU } from '@/utils/constants';
 import NavigationStepper from '@/components/NavigationStepper';
+import { useProfileContext } from '@/contexts/ProfileProvider';
 
 const sections = SECTIONS_MENU;
 
@@ -15,11 +15,11 @@ export default function Home() {
   const sectionRefs: Record<SectionKey, RefObject<HTMLDivElement>> = Object.fromEntries(
     sections.map((key) => [key, useRef<HTMLDivElement>(null)])
   ) as Record<SectionKey, RefObject<HTMLDivElement>>;
-  const [active, setActive] = useState<SectionKey>('about');
   const [data, setData] = useState<Partial<Record<SectionKey, any>>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { setAnchorEl, active, setActive, setScrollProgress } = useProfileContext();
 
   useEffect(() => {
     const fetchAllSections = async () => {
@@ -37,47 +37,29 @@ export default function Home() {
     fetchAllSections();
   }, []);
 
-  // useEffect(() => {
-  //   const handleScroll = () => {
-  //     const scrollTop = window.scrollY;
-  //     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-  //     const progress = (scrollTop / docHeight) * 100;
-  //     setScrollProgress(progress);
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (scrollTop / docHeight) * 100;
 
-  //     for (const key of sections) {
-  //       const ref = sectionRefs[key];
-  //       if (ref.current) {
-  //         const rect = ref.current.getBoundingClientRect();
-  //         if (rect.top >= 0 && rect.top < window.innerHeight / 2) {
-  //           setActive(key);
-  //           break;
-  //         }
-  //       }
-  //     }
-  //   };
+      setScrollProgress(progress);
 
-  //   window.addEventListener('scroll', handleScroll);
-  //   return () => window.removeEventListener('scroll', handleScroll);
-  // }, []);
+      for (const key of SECTIONS_MENU) {
+        const ref = sectionRefs[key];
+        if (ref?.current) {
+          const rect = ref.current.getBoundingClientRect();
+          if (rect.top >= 0 && rect.top < window.innerHeight / 2) {
+            setActive(key);
+            break;
+          }
+        }
+      }
+    };
 
-  // const scrollToSection = (ref: RefObject<HTMLElement | null>, name: SectionKey) => {
-  //   if (ref.current) {
-  //     ref.current.scrollIntoView({ behavior: 'smooth' });
-  //     setActive(name);
-  //     if (isMobile) setDrawerOpen(false);
-  //   }
-  // };
-
-  // const FadeBox = ({ children }: { children: ReactNode }) => (
-  //   <motion.div
-  //     initial={{ opacity: 0, y: 20 }}
-  //     whileInView={{ opacity: 1, y: 0 }}
-  //     transition={{ duration: 0.3 }}
-  //     viewport={{ once: true }}
-  //   >
-  //     {children}
-  //   </motion.div>
-  // );
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (loading) return <Loading />;
 
@@ -184,54 +166,25 @@ export default function Home() {
               : null}
           </Stack>
         );
-      // case "contact":
-      //   return (
-      //     <Stack spacing={1}>
-      //       <Typography>📧 {data.about.email}</Typography>
-      //       <Typography>📞 {data.about.phone}</Typography>
-      //       <Typography>🌐 {data.about.github}</Typography>
-      //     </Stack>
-      //   );
+
       default:
         return null;
     }
   };
 
+  const scrollToSection = (ref: RefObject<HTMLElement | null>, name: SectionKey) => {
+    if (ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth' });
+      setActive(name);
+      if (isMobile) setAnchorEl(null);
+    }
+  };
+
   return (
     <Box>
-      {/* <LinearProgress
-        variant="determinate"
-        value={scrollProgress}
-        sx={{
-          height: 4,
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          zIndex: 1200,
-        }}
-      /> */}
-
-      {/* <Box
-        sx={{
-          position: 'fixed',
-          top: 8,
-          right: 16,
-          zIndex: 1300,
-          display: 'flex',
-          gap: 2,
-        }}
-      >
-        {isMobile && (
-          <IconButton onClick={() => setDrawerOpen(true)}>
-            <MenuIcon />
-          </IconButton>
-        )}
-      </Box> */}
-
       <Box sx={{ display: 'flex', flexGrow: 1, mt: { xs: 6, md: 0 } }}>
-        {/* {!isMobile && (
-           <Box
+        {!isMobile && (
+          <Box
             sx={{
               width: 220,
               position: 'fixed',
@@ -248,7 +201,7 @@ export default function Home() {
               onSelect={(s) => scrollToSection(sectionRefs[s], s)}
             />
           </Box>
-        )} */}
+        )}
 
         <Box sx={{ flex: 1, ml: { xs: 0, md: '220px' } }}>
           {sections.map((section) => {
