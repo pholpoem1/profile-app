@@ -7,9 +7,6 @@ import {
   Avatar,
   IconButton,
   CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -37,7 +34,6 @@ import InputText from '@/components/Input/InputText';
 import dynamic from 'next/dynamic';
 import InputSelect from '@/components/Input/InputSelect';
 import HighlightOffRoundedIcon from '@mui/icons-material/HighlightOffRounded';
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import StackIcon from 'tech-stack-icons';
 import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
 
@@ -52,10 +48,11 @@ interface IEducationItem {
   startYear: string;
   endYear: string;
 }
-// interface ISkillGroup {
-//   category: string;
-//   items: string[];
-// }
+
+interface ISkillItem {
+  name: string;
+  icon: string;
+}
 interface IExperienceGroup {
   company: string;
   role: string;
@@ -66,21 +63,42 @@ interface IExperienceGroup {
   endYear: string;
   isCurrent?: boolean;
 }
-interface IProfileData {
-  about: {
-    name: string;
-    role: string;
-    email: string;
-    phone: string;
-    bio: string;
-    avatarUrl: string;
-    linkedin: string;
-    github: string;
-    resumeUrl?: string;
+interface IContactItem {
+  email: {
+    url: string;
+    icon: string;
   };
-  skills: string[];
+  phone: {
+    url: string;
+    icon: string;
+  };
+  linkedin: {
+    url: string;
+    icon: string;
+  };
+  github: {
+    url: string;
+    icon: string;
+  };
+  lineId: {
+    url: string;
+    icon: string;
+  };
+}
+
+interface IAbout {
+  name: string;
+  role: string;
+  bio: string;
+  avatarUrl: string;
+  resumeUrl?: string;
+}
+interface IProfileData {
+  about: IAbout;
+  skills: ISkillItem[];
   experience: IExperienceGroup[];
   education: IEducationItem[];
+  contact: IContactItem;
 }
 
 const years = [
@@ -105,17 +123,35 @@ export default function ProfileForm() {
     about: {
       name: '',
       role: '',
-      email: '',
-      phone: '',
       bio: '',
       avatarUrl: '',
-      linkedin: '',
-      github: '',
       resumeUrl: '',
     },
     skills: [],
     experience: [],
     education: [],
+    contact: {
+      email: {
+        url: '',
+        icon: '',
+      },
+      phone: {
+        url: '',
+        icon: '',
+      },
+      linkedin: {
+        url: '',
+        icon: '',
+      },
+      github: {
+        url: '',
+        icon: '',
+      },
+      lineId: {
+        url: '',
+        icon: '',
+      },
+    },
   });
   const [newSkillCategory, setNewSkillCategory] = useState('');
   const [newSkillItem, setNewSkillItem] = useState('');
@@ -176,17 +212,31 @@ export default function ProfileForm() {
     }
   };
 
+  const handleDeleteSkils = (index: number) => {
+    setCurrentSkillItems(currentSkillItems.filter((_, i) => i !== index));
+  };
+
   const handleAddSkillGroup = () => {
-    if (!newSkillCategory || currentSkillItems.length === 0) return;
-    setProfile((p) => ({
-      ...p,
+    setProfile((prev) => ({
+      ...prev,
       skills: [
-        ...p.skills,
-        // { category: newSkillCategory, items: currentSkillItems }
+        ...(prev.skills || []),
+        {
+          name: newSkillCategory,
+          icon: '',
+        },
       ],
     }));
-    setNewSkillCategory('');
-    setCurrentSkillItems([]);
+    // if (!newSkillCategory || currentSkillItems.length === 0) return;
+    // setProfile((p) => ({
+    //   ...p,
+    //   skills: [
+    //     ...p.skills,
+    //     // { category: newSkillCategory, items: currentSkillItems }
+    //   ],
+    // }));
+    // setNewSkillCategory('');
+    // setCurrentSkillItems([]);
   };
 
   const handleEducationSave = () => {
@@ -391,7 +441,7 @@ export default function ProfileForm() {
               )}
             </Box>
             <Stack spacing={2}>
-              {['Name', 'Role', 'Email', 'Phone'].map((f, i) => {
+              {['Name', 'Role'].map((f, i) => {
                 return (
                   <InputText
                     key={i}
@@ -422,26 +472,200 @@ export default function ProfileForm() {
                 label="Bio"
               />
 
-              <InputText
-                label="LinkedIn URL"
-                value={profile.about.linkedin || ''}
-                onChange={(e) =>
-                  setProfile((p) => ({
-                    ...p,
-                    about: { ...p.about, linkedin: e?.target.value || '' },
-                  }))
-                }
-              />
-              <InputText
-                label="GitHub URL"
-                value={profile.about.github || ''}
-                onChange={(e) =>
-                  setProfile((p) => ({
-                    ...p,
-                    about: { ...p.about, github: e?.target.value || '' },
-                  }))
-                }
-              />
+              <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+                <Grid size={6}>
+                  <InputText
+                    label="Email"
+                    value={profile.contact?.email.url || ''}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        contact: {
+                          ...p.contact,
+                          email: {
+                            ...p.contact.email,
+                            url: e?.target.value || '',
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </Grid>
+                <Grid size={6}>
+                  <InputText
+                    label="Email Icon"
+                    value={profile.contact?.email.icon || ''}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        contact: {
+                          ...p.contact,
+                          email: {
+                            ...p.contact.email,
+                            icon: p.contact.email.icon,
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </Grid>
+              </Grid>
+
+              <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+                <Grid size={6}>
+                  <InputText
+                    label="Phone"
+                    value={profile.contact?.phone.url || ''}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        contact: {
+                          ...p.contact,
+                          phone: {
+                            ...p.contact.phone,
+                            url: e?.target.value || '',
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </Grid>
+                <Grid size={6}>
+                  <InputText
+                    label="Phone Icon"
+                    value={profile.contact?.phone.icon || ''}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        contact: {
+                          ...p.contact,
+                          phone: {
+                            ...p.contact.phone,
+                            icon: p.contact.phone.icon,
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </Grid>
+              </Grid>
+
+              <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+                <Grid size={6}>
+                  <InputText
+                    label="Github"
+                    value={profile.contact?.github.url || ''}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        contact: {
+                          ...p.contact,
+                          github: {
+                            ...p.contact.github,
+                            url: e?.target.value || '',
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </Grid>
+                <Grid size={6}>
+                  <InputText
+                    label="Github Icon"
+                    value={profile.contact?.github.icon || ''}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        contact: {
+                          ...p.contact,
+                          github: {
+                            ...p.contact.github,
+                            icon: p.contact.github.icon,
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </Grid>
+              </Grid>
+
+              <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+                <Grid size={6}>
+                  <InputText
+                    label="Linkedin"
+                    value={profile.contact?.linkedin.url || ''}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        contact: {
+                          ...p.contact,
+                          linkedin: {
+                            ...p.contact.linkedin,
+                            url: e?.target.value || '',
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </Grid>
+                <Grid size={6}>
+                  <InputText
+                    label="Linkedin Icon"
+                    value={profile.contact?.linkedin.icon || ''}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        contact: {
+                          ...p.contact,
+                          linkedin: {
+                            ...p.contact.linkedin,
+                            icon: p.contact.linkedin.icon,
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </Grid>
+              </Grid>
+
+              <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+                <Grid size={6}>
+                  <InputText
+                    label="Line"
+                    value={profile.contact?.lineId.url || ''}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        contact: {
+                          ...p.contact,
+                          lineId: {
+                            ...p.contact.lineId,
+                            url: e?.target.value || '',
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </Grid>
+                <Grid size={6}>
+                  <InputText
+                    label="Line Icon"
+                    value={profile.contact?.lineId.icon || ''}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        contact: {
+                          ...p.contact,
+                          lineId: {
+                            ...p.contact.lineId,
+                            icon: p.contact.lineId.icon,
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </Grid>
+              </Grid>
             </Stack>
             <Box display={'flex'} alignItems={'center'} width={'100%'}>
               {isFileUploading ? (
@@ -482,13 +706,13 @@ export default function ProfileForm() {
             <Typography>Skills</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
+            {/* <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
               {profile.skills?.map((skill, index) => (
                 <Grid key={index} size={{ xs: 2, sm: 4, md: 4 }}>
                   <StackIcon name={skill} />;
                 </Grid>
               ))}
-            </Grid>
+            </Grid> */}
             {/* {profile.skills?.map((skill, i) => (
               <Box key={i} mb={2}>
                 <StackIcon name={skill} />;
@@ -506,16 +730,16 @@ export default function ProfileForm() {
 
             <Divider sx={{ my: 2 }} />
             <Stack spacing={2}>
-              <Box display={'flex'} alignItems={'end'}>
+              {/* <Box display={'flex'} alignItems={'end'}>
                 <InputText
                   label="Skill"
                   value={newSkillItem}
                   onChange={(e) => setNewSkillItem(e?.target.value || '')}
                 />
-                <IconButton aria-label="add" onClick={handleAddSkillItem}>
-                  <AddIcon />
+                <IconButton aria-label="add" onClick={() =>handleDeleteSkils}>
+                  <ClearRoundedIcon />
                 </IconButton>
-              </Box>
+              </Box> */}
               <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
                 {currentSkillItems?.map((skill, index) => (
                   <Grid key={index} size={{ xs: 2, sm: 4, md: 4 }}>
