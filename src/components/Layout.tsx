@@ -1,11 +1,13 @@
 import { Box, Container, IconButton, useMediaQuery, useTheme } from '@mui/material';
-import LightModeIcon from '@mui/icons-material/LightMode';
-import NightlightIcon from '@mui/icons-material/Nightlight';
+
 import { Lato } from 'next/font/google';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import MenuMobile from './MenuMobile';
 import { ProfileProvider, useProfileContext } from '@/contexts/ProfileProvider';
 import ProgressBar from './ProgressBar';
+import ScrollTop from './ScrollTop';
+import ToggleThemeButton from './ToggleThemeButton';
+import Header from './Header';
 
 const lato = Lato({
   weight: ['400', '700'],
@@ -30,20 +32,16 @@ const LayoutPage = ({
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
+
   return (
     <ProfileProvider>
-      <main className={lato.className}>
+      <main className={lato.className} id="main">
         <Box>
+          <div className="glow-bg glow-circle"></div>
+          <div className="glow-bg glow-oval"></div>
+          <Header />
           <ProgressBar />
-          <Box sx={{ position: 'fixed', top: 8, right: 64, zIndex: 1300 }}>
-            <IconButton onClick={() => setDarkMode(!darkMode)}>
-              {darkMode ? (
-                <LightModeIcon fontSize="large" sx={{ color: '#f5b942' }} />
-              ) : (
-                <NightlightIcon fontSize="large" sx={{ color: 'black' }} />
-              )}
-            </IconButton>
-          </Box>
+
           <Box
             sx={{
               position: 'fixed',
@@ -61,28 +59,13 @@ const LayoutPage = ({
             )}
           </Box>
           <MenuMobile anchorEl={anchorEl} setAnchorEl={setAnchorEl} />
-
-          {/* {!isMobile && (
-          <Box
-            sx={{
-              width: 220,
-              position: 'fixed',
-              top: 64,
-              left: 0,
-              // height: "100vh",
-              overflowY: 'auto',
-              zIndex: 1100,
-            }}
-          >
-            <NavigationStepper active={active} sections={SECTIONS_MENU} onSelect={(s) => {}} />
-          </Box>
-        )} */}
-
           <Container maxWidth="lg" disableGutters sx={{ px: { xs: 2, md: 4 }, py: 4 }}>
             {children}
           </Container>
         </Box>
       </main>
+      <ToggleThemeButton toggleColorMode={() => setDarkMode(!darkMode)} />
+      <ScrollTop />
     </ProfileProvider>
   );
 };
