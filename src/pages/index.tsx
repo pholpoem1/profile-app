@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef, RefObject } from 'react';
-import { Box, Typography, Stack, useMediaQuery, useTheme, Avatar, Divider } from '@mui/material';
+import { Box, Typography, useMediaQuery, useTheme, Avatar, Divider } from '@mui/material';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/libs/firebase';
 import Loading from '@/components/Loading';
 import { SECTIONS_MENU } from '@/utils/constants';
-import NavigationStepper from '@/components/NavigationStepper';
-import { useProfileContext } from '@/contexts/ProfileProvider';
 
 const sections = SECTIONS_MENU;
 
@@ -17,9 +15,6 @@ export default function Home() {
   ) as Record<SectionKey, RefObject<HTMLDivElement>>;
   const [data, setData] = useState<Partial<Record<SectionKey, any>>>({});
   const [loading, setLoading] = useState<boolean>(true);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { setAnchorEl, active, setActive, setScrollProgress } = useProfileContext();
 
   useEffect(() => {
     const fetchAllSections = async () => {
@@ -37,189 +32,46 @@ export default function Home() {
     fetchAllSections();
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = (scrollTop / docHeight) * 100;
-
-      setScrollProgress(progress);
-
-      for (const key of SECTIONS_MENU) {
-        const ref = sectionRefs[key];
-        if (ref?.current) {
-          const rect = ref.current.getBoundingClientRect();
-          if (rect.top >= 0 && rect.top < window.innerHeight / 2) {
-            setActive(key);
-            break;
-          }
-        }
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   if (loading) return <Loading />;
 
-  const renderContent = (section: SectionKey) => {
-    const content = data[section];
-    if (!content) return null;
-
-    switch (section) {
-      case 'about':
-        return (
-          <Stack direction={'column'} spacing={4} alignItems={'flex-start'} width={'100%'}>
-            <Stack
-              direction={'row'}
-              spacing={5}
-              width={'100%'}
-              alignItems={'center'}
-              // justifyContent={"space-between"}
-            >
-              <Avatar
-                src={content.avatarUrl}
-                sx={{
-                  width: 150,
-                  height: 150,
-                  borderRadius: '16px',
-                  border: '2px solid white',
-                }}
-              />
-              <Stack spacing={1}>
-                <Typography>📧 {content.email}</Typography>
-                <Typography>📞 {content.phone}</Typography>
-                <Typography>
-                  🌐{' '}
-                  <a target="_blank" href={content.github}>
-                    {content.github}
-                  </a>
-                </Typography>
-                <Typography>
-                  🌐{' '}
-                  <a target="_blank" href={content.linkedin}>
-                    {content.linkedin}
-                  </a>
-                </Typography>
-              </Stack>
-            </Stack>
-            <Box>
-              <Typography variant="h4">{content.name}</Typography>
-              <Typography variant="h6">{content.role}</Typography>
-              <Box dangerouslySetInnerHTML={{ __html: content.bio }} />
-            </Box>
-          </Stack>
-        );
-      case 'skills':
-        return (
-          <Stack spacing={3}>
-            {Array.isArray(content)
-              ? content.map((group: any, i: number) => (
-                  <Box key={i}>
-                    <Typography fontWeight="bold">{group.category}</Typography>
-                    <Stack pl={2} spacing={0.5}>
-                      {group.items.map((item: string, j: number) => (
-                        <Typography key={j}>• {item}</Typography>
-                      ))}
-                    </Stack>
-                  </Box>
-                ))
-              : null}
-          </Stack>
-        );
-      case 'experience':
-        return (
-          <Stack spacing={3}>
-            {Array.isArray(content)
-              ? content.map((exp: any, i: number) => (
-                  <Box key={i}>
-                    <Typography variant="h6">
-                      {exp.company} - {exp.role}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {exp.startMonth} {exp.startYear} - {exp.endMonth} {exp.endYear}
-                    </Typography>
-                    <Typography sx={{ mt: 1 }}>{exp.description}</Typography>
-                  </Box>
-                ))
-              : null}
-          </Stack>
-        );
-      case 'education':
-        return (
-          <Stack spacing={3}>
-            {Array.isArray(content)
-              ? content.map((edu: any, i: number) => (
-                  <Box key={i}>
-                    <Typography variant="h6" fontWeight="bold">
-                      {edu.institution}
-                    </Typography>
-                    <Typography variant="subtitle1">
-                      {edu.faculty} - {edu.major}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {edu.startYear} - {edu.endYear}
-                    </Typography>
-                  </Box>
-                ))
-              : null}
-          </Stack>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  const scrollToSection = (ref: RefObject<HTMLElement | null>, name: SectionKey) => {
-    if (ref.current) {
-      ref.current.scrollIntoView({ behavior: 'smooth' });
-      setActive(name);
-      if (isMobile) setAnchorEl(null);
-    }
-  };
+  console.log('Object.entries(data) :>> ', Object.entries(data));
 
   return (
     <Box>
       <Box sx={{ display: 'flex', flexGrow: 1, mt: { xs: 6, md: 0 } }}>
-        {!isMobile && (
-          <Box
-            sx={{
-              width: 220,
-              position: 'fixed',
-              top: 64,
-              left: 0,
-              // height: "100vh",
-              overflowY: 'auto',
-              zIndex: 1100,
-            }}
-          >
-            <NavigationStepper
-              active={active}
-              sections={sections}
-              onSelect={(s) => scrollToSection(sectionRefs[s], s)}
-            />
-          </Box>
-        )}
-
         <Box sx={{ flex: 1, ml: { xs: 0, md: '220px' } }}>
-          {sections.map((section) => {
+          {Object.entries(data).map((section) => {
+            const sectionName = section[0] as SectionKey;
+
             return (
               <Box
+                id={sectionName}
+                component={'div'}
+                key={sectionName}
+                ref={sectionRefs[sectionName]}
+                data-section={sectionName}
+                sx={{ minHeight: '100vh', py: 10, px: { xs: 2, md: 4 } }}
+              >
+                <Typography variant="h3" gutterBottom>
+                  {/* {sectionName.name} */}
+                </Typography>
+              </Box>
+            );
+          })}
+          {/* {sections.map((section) => {
+            return (
+              <Box
+                id={section}
+                component={'div'}
                 key={section}
                 ref={sectionRefs[section]}
                 data-section={section}
                 sx={{ minHeight: '100vh', py: 10, px: { xs: 2, md: 4 } }}
               >
-                <Typography variant="h4" gutterBottom>
-                  {section.toUpperCase()}
-                </Typography>
-                {renderContent(section)}
-                <Divider sx={{ mt: 6 }} />
+                <Typography variant="h3" gutterBottom></Typography>
               </Box>
             );
-          })}
+          })} */}
         </Box>
       </Box>
     </Box>
