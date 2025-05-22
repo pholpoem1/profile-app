@@ -1,0 +1,65 @@
+:root {
+    /* Google Logo Colors */
+    --google-blue: #4285F4;
+    --google-red: #EA4335;
+    --google-yellow: #FBBC05;
+    --google-green: #34A853;
+  
+    /* Material Colors (500 series) */
+    --material-blue: #2196F3;
+    --material-red: #F44336;
+    --material-yellow: #FFC107;
+    --material-green: #4CAF50;
+  
+    /* Base Theme Colors */
+    --light-bg: #ffffff;
+    --dark-bg: #121212;
+    --light-text: #000000;
+    --dark-text: #ffffff;
+  }
+  
+  /* Google-like button styles */
+  .btn-google {
+    color: #fff;
+    font-weight: bold;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  
+  /* Individual brand buttons */
+  .btn-google-blue {
+    background-color: var(--google-blue);
+  }
+  .btn-google-red {
+    background-color: var(--google-red);
+  }
+  .btn-google-yellow {
+    background-color: var(--google-yellow);
+    color: #000;
+  }
+  .btn-google-green {
+    background-color: var(--google-green);
+  }
+  
+  /* Hover effects */
+  .btn-google:hover {
+    opacity: 0.85;
+  }
+  
+  /* Typography */
+  .text-google-blue {
+    color: var(--google-blue);
+  }
+  .text-google-red {
+    color: var(--google-red);
+  }
+  .text-google-yellow {
+    color: var(--google-yellow);
+  }
+  .text-google-green {
+    color: var(--google-green);
+  }
+  
