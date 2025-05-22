@@ -8,14 +8,18 @@ const ProgressBar = () => {
     <LinearProgress
       variant="determinate"
       value={scrollProgress}
-      sx={{
+      sx={(theme) => ({
         height: 4,
         position: 'fixed',
         top: 0,
         left: 0,
         width: '100%',
         zIndex: 1200,
-      }}
+        backgroundColor: 'transparent',
+        '& .MuiLinearProgress-bar': {
+          background: `linear-gradient(to right, ${theme.palette.primary.main}, ${theme.palette.error.main}, ${theme.palette.warning.main}, ${theme.palette.success.main})`,
+        },
+      })}
     />
   );
 };
