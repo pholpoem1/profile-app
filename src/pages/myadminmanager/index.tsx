@@ -10,12 +10,10 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Divider,
   Stack,
   FormControlLabel,
   Checkbox,
   Grid,
-  Badge,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EditIcon from '@mui/icons-material/Edit';
@@ -34,14 +32,16 @@ import InputText from '@/components/Input/InputText';
 import dynamic from 'next/dynamic';
 import InputSelect from '@/components/Input/InputSelect';
 import HighlightOffRoundedIcon from '@mui/icons-material/HighlightOffRounded';
-import StackIcon from 'tech-stack-icons';
 import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
+import Label from '@/components/Input/Label';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 
 const RitchText = dynamic(() => import('@/components/Input/RitchText'), {
   ssr: false,
 });
 
 interface IEducationItem {
+  seq: number;
   institution: string;
   faculty: string;
   major: string;
@@ -50,10 +50,12 @@ interface IEducationItem {
 }
 
 interface ISkillItem {
+  seq: number;
   name: string;
   icon: string;
 }
 interface IExperienceGroup {
+  seq: number;
   company: string;
   role: string;
   description: string;
@@ -102,7 +104,7 @@ interface IProfileData {
 }
 
 const years = [
-  ...Array.from({ length: 15 }, (_, i) => {
+  ...Array.from({ length: 20 }, (_, i) => {
     const year = new Date().getFullYear() - i;
     return {
       label: year.toString(),
@@ -127,7 +129,13 @@ export default function ProfileForm() {
       avatarUrl: '',
       resumeUrl: '',
     },
-    skills: [],
+    skills: [
+      {
+        seq: 1,
+        name: '',
+        icon: '',
+      },
+    ],
     experience: [],
     education: [],
     contact: {
@@ -157,6 +165,7 @@ export default function ProfileForm() {
   const [newSkillItem, setNewSkillItem] = useState('');
   const [currentSkillItems, setCurrentSkillItems] = useState<string[]>([]);
   const [newEducation, setNewEducation] = useState<IEducationItem>({
+    seq: 1,
     institution: '',
     faculty: '',
     major: '',
@@ -170,6 +179,7 @@ export default function ProfileForm() {
   const [isFileUploading, setIsFileUploading] = useState(false);
 
   const [newExperience, setNewExperience] = useState<IExperienceGroup>({
+    seq: 1,
     company: '',
     role: '',
     description: '',
@@ -182,8 +192,11 @@ export default function ProfileForm() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      if (user) fetchProfile();
-      else setLoading(false);
+      if (user) {
+        fetchProfile();
+      } else {
+        setLoading(false);
+      }
     });
     return () => unsub();
   }, []);
@@ -191,7 +204,7 @@ export default function ProfileForm() {
   const fetchProfile = async () => {
     const snap = await getDoc(doc(db, CONSTANTS.collecttion, CONSTANTS.document));
     if (snap.exists()) {
-      setProfile(snap.data() as IProfileData);
+      setProfile((prevState) => ({ ...prevState, ...(snap.data() as IProfileData) }));
     }
     setLoading(false);
   };
@@ -222,21 +235,12 @@ export default function ProfileForm() {
       skills: [
         ...(prev.skills || []),
         {
+          seq: prev.skills.length + 1,
           name: newSkillCategory,
           icon: '',
         },
       ],
     }));
-    // if (!newSkillCategory || currentSkillItems.length === 0) return;
-    // setProfile((p) => ({
-    //   ...p,
-    //   skills: [
-    //     ...p.skills,
-    //     // { category: newSkillCategory, items: currentSkillItems }
-    //   ],
-    // }));
-    // setNewSkillCategory('');
-    // setCurrentSkillItems([]);
   };
 
   const handleEducationSave = () => {
@@ -245,6 +249,7 @@ export default function ProfileForm() {
     else updated.push(newEducation);
     setProfile((p) => ({ ...p, education: updated }));
     setNewEducation({
+      seq: 1,
       institution: '',
       faculty: '',
       major: '',
@@ -255,9 +260,11 @@ export default function ProfileForm() {
   };
 
   const handleExperienceSave = () => {
-    const { company, role, description, startMonth, endMonth } = newExperience;
-    if (!company || !role || !description || !startMonth || !endMonth) {
-      alert('Please fill in all fields.');
+    const { company, role, description, startMonth, endMonth, seq, isCurrent } = newExperience;
+    if (!company || !role || !description) {
+      if (!isCurrent && (!startMonth || !endMonth)) {
+        alert('Please fill in all fields.');
+      }
       return;
     }
     // if (
@@ -270,9 +277,12 @@ export default function ProfileForm() {
     // }
     setProfile((prev) => ({
       ...prev,
-      experience: prev.experience ? [...prev.experience, newExperience] : [newExperience],
+      experience: prev.experience
+        ? [...prev.experience, { ...newExperience, seq: prev.experience.length + 1 }]
+        : [{ ...newExperience, seq: 1 }],
     }));
     setNewExperience({
+      seq: 1,
       company: '',
       role: '',
       description: '',
@@ -382,9 +392,13 @@ export default function ProfileForm() {
   const handleRemoveSkillGroup = (index: number) => {
     setProfile((prev) => ({
       ...prev,
-      skills: prev.skills.filter((_, i) => i !== index),
+      skills: profile.skills.filter((s) => s.seq !== index),
     }));
   };
+
+  const sortedExperience = [...profile.experience].sort((a, b) => b.seq - a.seq);
+
+  console.log('sortedExperience :>> ', sortedExperience);
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
@@ -472,7 +486,7 @@ export default function ProfileForm() {
                 label="Bio"
               />
 
-              <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+              <Grid container rowSpacing={1} columnSpacing={1}>
                 <Grid size={6}>
                   <InputText
                     label="Email"
@@ -502,7 +516,7 @@ export default function ProfileForm() {
                           ...p.contact,
                           email: {
                             ...p.contact.email,
-                            icon: p.contact.email.icon,
+                            icon: e?.target.value || '',
                           },
                         },
                       }))
@@ -511,7 +525,7 @@ export default function ProfileForm() {
                 </Grid>
               </Grid>
 
-              <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+              <Grid container rowSpacing={1} columnSpacing={1}>
                 <Grid size={6}>
                   <InputText
                     label="Phone"
@@ -541,7 +555,7 @@ export default function ProfileForm() {
                           ...p.contact,
                           phone: {
                             ...p.contact.phone,
-                            icon: p.contact.phone.icon,
+                            icon: e?.target.value || '',
                           },
                         },
                       }))
@@ -550,7 +564,7 @@ export default function ProfileForm() {
                 </Grid>
               </Grid>
 
-              <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+              <Grid container rowSpacing={1} columnSpacing={1}>
                 <Grid size={6}>
                   <InputText
                     label="Github"
@@ -580,7 +594,7 @@ export default function ProfileForm() {
                           ...p.contact,
                           github: {
                             ...p.contact.github,
-                            icon: p.contact.github.icon,
+                            icon: e?.target.value || '',
                           },
                         },
                       }))
@@ -589,7 +603,7 @@ export default function ProfileForm() {
                 </Grid>
               </Grid>
 
-              <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+              <Grid container rowSpacing={1} columnSpacing={1}>
                 <Grid size={6}>
                   <InputText
                     label="Linkedin"
@@ -619,7 +633,7 @@ export default function ProfileForm() {
                           ...p.contact,
                           linkedin: {
                             ...p.contact.linkedin,
-                            icon: p.contact.linkedin.icon,
+                            icon: e?.target.value || '',
                           },
                         },
                       }))
@@ -628,7 +642,7 @@ export default function ProfileForm() {
                 </Grid>
               </Grid>
 
-              <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+              <Grid container rowSpacing={1} columnSpacing={1}>
                 <Grid size={6}>
                   <InputText
                     label="Line"
@@ -658,7 +672,7 @@ export default function ProfileForm() {
                           ...p.contact,
                           lineId: {
                             ...p.contact.lineId,
-                            icon: p.contact.lineId.icon,
+                            icon: e?.target.value || '',
                           },
                         },
                       }))
@@ -706,63 +720,67 @@ export default function ProfileForm() {
             <Typography>Skills</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            {/* <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
-              {profile.skills?.map((skill, index) => (
-                <Grid key={index} size={{ xs: 2, sm: 4, md: 4 }}>
-                  <StackIcon name={skill} />;
-                </Grid>
-              ))}
-            </Grid> */}
-            {/* {profile.skills?.map((skill, i) => (
-              <Box key={i} mb={2}>
-                <StackIcon name={skill} />;
-              <Box display={'flex'} alignItems={'center'}>
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    {group}
-                  </Typography>
-                  <IconButton>
-                    <CloseRoundedIcon onClick={() => handleRemoveSkillGroup(i)} color="error" />
-                  </IconButton>
-                </Box>
-              </Box>
-            ))}
-               */}
-
-            <Divider sx={{ my: 2 }} />
             <Stack spacing={2}>
-              {/* <Box display={'flex'} alignItems={'end'}>
-                <InputText
-                  label="Skill"
-                  value={newSkillItem}
-                  onChange={(e) => setNewSkillItem(e?.target.value || '')}
-                />
-                <IconButton aria-label="add" onClick={() =>handleDeleteSkils}>
-                  <ClearRoundedIcon />
-                </IconButton>
-              </Box> */}
-              <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
-                {currentSkillItems?.map((skill, index) => (
-                  <Grid key={index} size={{ xs: 2, sm: 4, md: 4 }}>
-                    <Badge
-                      badgeContent={
-                        <IconButton
-                          color="error"
-                          onClick={() => {
-                            setCurrentSkillItems((prev) => prev.filter((_, i) => i !== index));
+              <Grid container rowSpacing={1} columnSpacing={1}>
+                <Grid size={5}>
+                  <Label>Skill Name</Label>
+                </Grid>
+                <Grid size={6}>
+                  <Label>Skill Icon</Label>
+                </Grid>
+                {profile.skills?.map((skill) => {
+                  return (
+                    <>
+                      <Grid size={5}>
+                        <InputText
+                          placeholder="Name"
+                          value={skill.name || ''}
+                          onChange={(e) => {
+                            const updateSkillName = profile.skills.find((s) => s.seq === skill.seq);
+                            if (updateSkillName) {
+                              let _updateSkillName = { ...updateSkillName, name: e?.target.value || '' };
+                              setProfile((p) => ({
+                                ...p,
+                                skills: p.skills.map((s) => (s.seq === skill.seq ? _updateSkillName : s)),
+                              }));
+                            }
                           }}
+                        />
+                      </Grid>
+                      <Grid size={6}>
+                        <InputText
+                          placeholder="Icon"
+                          value={skill.icon || ''}
+                          onChange={(e) => {
+                            const updateSkillIcon = profile.skills.find((s) => s.seq === skill.seq);
+                            if (updateSkillIcon) {
+                              let _updateSkillIcon = { ...updateSkillIcon, icon: e?.target.value || '' };
+                              setProfile((p) => ({
+                                ...p,
+                                skills: p.skills.map((s) => (s.seq === skill.seq ? _updateSkillIcon : s)),
+                              }));
+                            }
+                          }}
+                        />
+                      </Grid>
+                      {skill.seq !== 1 && (
+                        <IconButton
+                          sx={{ alignItems: 'flex-end', '&:hover': { backgroundColor: 'transparent' } }}
+                          onClick={() => handleRemoveSkillGroup(skill.seq)}
+                          color="error"
+                          size="large"
+                          style={{ justifyContent: 'flex-end' }}
                         >
-                          <ClearRoundedIcon fontSize="small" />
+                          <ClearRoundedIcon />
                         </IconButton>
-                      }
-                    >
-                      <StackIcon style={{ width: '50px', height: '50px' }} name={skill} />
-                    </Badge>
-                  </Grid>
-                ))}
+                      )}
+                    </>
+                  );
+                })}
               </Grid>
             </Stack>
             <Button onClick={handleAddSkillGroup} startIcon={<AddIcon />}>
-              Add Skill Name
+              Add Skill
             </Button>
           </AccordionDetails>
         </Accordion>
@@ -793,6 +811,7 @@ export default function ProfileForm() {
                   }))
                 }
                 label="Description"
+                value={newExperience.description}
               />
               <Stack direction="row" spacing={2}>
                 <InputSelect
@@ -859,35 +878,51 @@ export default function ProfileForm() {
                   onChange={(e) =>
                     setNewExperience((p) => ({
                       ...p,
-                      endMonth: e.target.value,
+                      endYear: e.target.value,
                     }))
                   }
                   isDisabled={newExperience.isCurrent}
                 />
               </Stack>
             </Stack>
-            <Button sx={{ mt: 2 }} onClick={handleExperienceSave} startIcon={<AddIcon />}>
-              Add Experience
+            <Button sx={{ mt: 2 }} onClick={handleExperienceSave} startIcon={<SaveOutlinedIcon />}>
+              Save Experience
             </Button>
-            {profile.experience?.map((exp, i) => {
+            {sortedExperience?.map((exp, i) => {
               return (
-                <Box key={i} mt={2} p={2} border={1} borderColor="divider" borderRadius={1}>
-                  <Typography fontWeight="bold">
-                    {exp.company} - {exp.role}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {exp.startMonth} {exp.startYear} - {exp.endMonth} {exp.endYear}
-                  </Typography>
-                  <Typography sx={{ mt: 1 }}>{exp.description}</Typography>
-                  <Box textAlign="right">
+                <Grid
+                  container
+                  rowSpacing={1}
+                  columnSpacing={1}
+                  mt={2}
+                  key={i}
+                  p={2}
+                  border={1}
+                  borderColor="divider"
+                  borderRadius={1}
+                >
+                  <Grid size={10} mt={2}>
+                    <Typography fontWeight="bold">
+                      {exp.role} - {exp.company}
+                    </Typography>
+                  </Grid>
+                  <Grid size={2}>
                     <IconButton onClick={() => handleEditExperience(i)}>
                       <EditIcon />
                     </IconButton>
-                    <IconButton onClick={() => handleDeleteExperience(i)}>
+                    <IconButton color="error" onClick={() => handleDeleteExperience(i)}>
                       <HighlightOffRoundedIcon />
                     </IconButton>
-                  </Box>
-                </Box>
+                  </Grid>
+                  <Grid size={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      {exp.startMonth} {exp.startYear} - {exp.isCurrent ? 'Present' : exp.endMonth + exp.endYear}
+                    </Typography>
+                  </Grid>
+                  <Grid size={12}>
+                    <div dangerouslySetInnerHTML={{ __html: exp.description }} />
+                  </Grid>
+                </Grid>
               );
             })}
           </AccordionDetails>
@@ -934,28 +969,28 @@ export default function ProfileForm() {
                   label="Start Year"
                   options={years}
                   value={newEducation.startYear}
-                  onChange={(e) =>
-                    setNewExperience((p) => ({
+                  onChange={(e) => {
+                    setNewEducation((p) => ({
                       ...p,
                       startYear: e.target.value,
-                    }))
-                  }
+                    }));
+                  }}
                 />
                 <InputSelect
                   label="End Year"
                   options={years}
                   value={newEducation.endYear}
-                  onChange={(e) =>
-                    setNewExperience((p) => ({
+                  onChange={(e) => {
+                    setNewEducation((p) => ({
                       ...p,
-                      endMonth: e.target.value,
-                    }))
-                  }
+                      endYear: e.target.value,
+                    }));
+                  }}
                 />
               </Stack>
             </Stack>
-            <Button onClick={handleEducationSave} sx={{ mt: 1 }}>
-              + Add Education
+            <Button onClick={handleEducationSave} sx={{ mt: 1 }} startIcon={<SaveOutlinedIcon />}>
+              Save Education
             </Button>
             {profile.education?.map((edu, i) => (
               <Box key={i} mt={2} display="flex" justifyContent="space-between">
@@ -978,6 +1013,7 @@ export default function ProfileForm() {
                     <EditIcon />
                   </IconButton>
                   <IconButton
+                    color="error"
                     onClick={() =>
                       setProfile((p) => ({
                         ...p,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, RefObject } from 'react';
-import { Box, Typography, useMediaQuery, useTheme, Avatar, Divider } from '@mui/material';
+import { Box, Typography, useMediaQuery, useTheme, Avatar, Divider, Stack, Link, Chip } from '@mui/material';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/libs/firebase';
 import Loading from '@/components/Loading';
@@ -34,8 +34,6 @@ export default function Home() {
 
   if (loading) return <Loading />;
 
-  console.log('Object.entries(data) :>> ', Object.entries(data));
-
   return (
     <Box>
       <Box sx={{ display: 'flex', flexGrow: 1, mt: { xs: 6, md: 0 } }}>
@@ -58,6 +56,7 @@ export default function Home() {
               </Box>
             );
           })}
+
           {/* {sections.map((section) => {
             return (
               <Box
