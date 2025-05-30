@@ -12,6 +12,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.0.0",
+    "@mui/lab": "7.0.0-beta.12",
     "@mui/material": "^7.0.0",
     "@mui/styled-engine-sc": "^6.4.6",
     "@tiptap/core": "^2.11.7",
@@ -29,7 +30,9 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",
+    "react-inlinesvg": "^4.2.0",
     "styled-components": "^6.1.16",
+    "swr": "^2.3.3",
     "tech-stack-icons": "^2.1.0"
   },
   "devDependencies": {

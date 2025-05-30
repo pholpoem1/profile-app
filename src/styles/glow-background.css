@@ -23,12 +23,12 @@
   
   .glow-oval {
     top: 14rem;
-    left: calc(50% + 5rem);
+    /* left: calc(50% + 5rem); */
     transform: translateX(-50%);
     width: 30rem;
     height: 25rem;
     border-radius: 9999px;
-    background-color: rgba(234, 67, 53, 0.5); /* Google Red - 50% */
+    background-color: rgba(234, 67, 53, 0.5); 
     filter: blur(14rem);
     z-index: -10;
     position: absolute;

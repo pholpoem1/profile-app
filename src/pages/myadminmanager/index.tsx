@@ -35,6 +35,8 @@ import HighlightOffRoundedIcon from '@mui/icons-material/HighlightOffRounded';
 import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
 import Label from '@/components/Input/Label';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import { useAuth } from '@/components/useAuth';
+import { useProfileData } from '@/components/useProfileData';
 
 const RitchText = dynamic(() => import('@/components/Input/RitchText'), {
   ssr: false,
@@ -95,7 +97,7 @@ interface IAbout {
   avatarUrl: string;
   resumeUrl?: string;
 }
-interface IProfileData {
+export interface IProfileData {
   about: IAbout;
   skills: ISkillItem[];
   experience: IExperienceGroup[];
@@ -120,7 +122,6 @@ const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 export default function ProfileForm() {
   const { enqueueSnackbar } = useSnackbar();
-
   const [profile, setProfile] = useState<IProfileData>({
     about: {
       name: '',
@@ -173,8 +174,8 @@ export default function ProfileForm() {
     endYear: '',
   });
   const [editingEducationIndex, setEditingEducationIndex] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
+  // const [loading, setLoading] = useState(true);
+  // const [user, setUser] = useState<User | null>(null);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
   const [isFileUploading, setIsFileUploading] = useState(false);
 
@@ -189,25 +190,28 @@ export default function ProfileForm() {
     endYear: '',
   });
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      if (user) {
-        fetchProfile();
-      } else {
-        setLoading(false);
-      }
-    });
-    return () => unsub();
-  }, []);
+  const { user, loading: authLoading } = useAuth();
+  const { data: dataProfile, error, isLoading } = useProfileData(!!user);
 
-  const fetchProfile = async () => {
-    const snap = await getDoc(doc(db, CONSTANTS.collecttion, CONSTANTS.document));
-    if (snap.exists()) {
-      setProfile((prevState) => ({ ...prevState, ...(snap.data() as IProfileData) }));
-    }
-    setLoading(false);
-  };
+  // useEffect(() => {
+  //   const unsub = onAuthStateChanged(auth, (user) => {
+  //     setUser(user);
+  //     if (user) {
+  //       fetchProfile();
+  //     } else {
+  //       setLoading(false);
+  //     }
+  //   });
+  //   return () => unsub();
+  // }, []);
+
+  // const fetchProfile = async () => {
+  //   const snap = await getDoc(doc(db, CONSTANTS.collecttion, CONSTANTS.document));
+  //   if (snap.exists()) {
+  //     setProfile((prevState) => ({ ...prevState, ...(snap.data() as IProfileData) }));
+  //   }
+  //   setLoading(false);
+  // };
 
   const onSubmitProfile = async () => {
     if (!user) return;
@@ -244,7 +248,7 @@ export default function ProfileForm() {
   };
 
   const handleEducationSave = () => {
-    const updated = profile.education ? [...profile.education] : [];
+    const updated = dataProfile?.education ? [...dataProfile?.education] : [];
     if (editingEducationIndex !== null) updated[editingEducationIndex] = newEducation;
     else updated.push(newEducation);
     setProfile((p) => ({ ...p, education: updated }));
@@ -294,8 +298,8 @@ export default function ProfileForm() {
   };
 
   const handleEditExperience = (index: number) => {
-    const exp = profile.experience[index];
-    setNewExperience(exp);
+    const exp = dataProfile?.experience[index];
+    setNewExperience(exp as IExperienceGroup);
     setProfile((prev) => ({
       ...prev,
       experience: prev.experience.filter((_, i) => i !== index),
@@ -345,12 +349,12 @@ export default function ProfileForm() {
 
   const { getRootProps: getAvatarRootProps, getInputProps: getAvatarInputProps } = useDropzone({
     onDrop: handleAvatarDrop,
-    disabled: profile.about.avatarUrl ? true : false,
+    disabled: dataProfile?.about.avatarUrl ? true : false,
     accept: { 'image/*': [] },
   });
   const { getRootProps: getResumeRootProps, getInputProps: getResumeInputProps } = useDropzone({
     onDrop: handleResumeDrop,
-    disabled: profile.about.resumeUrl ? true : false,
+    disabled: dataProfile?.about.resumeUrl ? true : false,
     accept: {
       'application/pdf': [],
     },
@@ -358,7 +362,7 @@ export default function ProfileForm() {
 
   const deleteAvatarFromFirestore = async () => {
     if (user) {
-      await deleteFileAndClearUrl(profile.about.avatarUrl, 'avatarUrl');
+      await deleteFileAndClearUrl(dataProfile?.about.avatarUrl as string, 'avatarUrl');
       setProfile((p) => ({ ...p, about: { ...p.about, avatarUrl: '' } }));
 
       enqueueSnackbar('Delete Success!', { variant: 'success' });
@@ -367,14 +371,15 @@ export default function ProfileForm() {
 
   const deleteResumeFromFirestore = async () => {
     if (user) {
-      await deleteFileAndClearUrl(profile.about.resumeUrl!, 'resumeUrl');
+      await deleteFileAndClearUrl(dataProfile?.about.resumeUrl!, 'resumeUrl');
       setProfile((p) => ({ ...p, about: { ...p.about, resumeUrl: '' } }));
 
       enqueueSnackbar('Delete Success!', { variant: 'success' });
     }
   };
 
-  if (loading) return <Loading />;
+  if (isLoading) return <Loading />;
+  if (!dataProfile) return <div>ไม่พบข้อมูล</div>;
 
   if (!user) {
     return (
@@ -390,22 +395,18 @@ export default function ProfileForm() {
   }
 
   const handleRemoveSkillGroup = (index: number) => {
-    setProfile((prev) => ({
-      ...prev,
-      skills: profile.skills.filter((s) => s.seq !== index),
-    }));
+    if (dataProfile)
+      setProfile((prev) => ({
+        ...prev,
+        skills: dataProfile?.skills.filter((s) => s.seq !== index),
+      }));
   };
 
-  const sortedExperience = [...profile.experience].sort((a, b) => b.seq - a.seq);
-
-  console.log('sortedExperience :>> ', sortedExperience);
+  const sortedExperience = dataProfile?.experience && [...dataProfile?.experience].sort((a, b) => b.seq - a.seq);
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Typography variant="h4" gutterBottom>
-          Update Profile
-        </Typography>
         <Button color="error" onClick={() => signOut(auth)}>
           Logout
         </Button>
@@ -424,7 +425,7 @@ export default function ProfileForm() {
                   ) : (
                     <>
                       <Avatar
-                        src={profile.about.avatarUrl}
+                        src={dataProfile?.about.avatarUrl}
                         sx={{
                           width: 150,
                           height: 150,
@@ -433,14 +434,14 @@ export default function ProfileForm() {
                         }}
                       />
                       <input {...getAvatarInputProps()} />
-                      {!profile.about.avatarUrl && (
+                      {!dataProfile?.about.avatarUrl && (
                         <Typography variant="body2">Click or drag image to upload avatar</Typography>
                       )}
                     </>
                   )}
                 </Box>
               </Box>
-              {profile.about.avatarUrl && (
+              {dataProfile?.about.avatarUrl && (
                 <Box width={'100%'} display={'flex'} justifyContent={'center'}>
                   <IconButton
                     sx={{ maxWidth: 'fit-content' }}
@@ -455,24 +456,34 @@ export default function ProfileForm() {
               )}
             </Box>
             <Stack spacing={2}>
-              {['Name', 'Role'].map((f, i) => {
-                return (
-                  <InputText
-                    key={i}
-                    label={f}
-                    value={profile.about[f.toLowerCase() as keyof typeof profile.about]}
-                    onChange={(e) =>
-                      setProfile((p) => ({
-                        ...p,
-                        about: {
-                          ...p.about,
-                          [f.toLowerCase()]: e?.target.value,
-                        },
-                      }))
-                    }
-                  />
-                );
-              })}
+              <InputText
+                label={'Name'}
+                value={dataProfile?.about.name || ''}
+                onChange={(e) =>
+                  setProfile((p) => ({
+                    ...p,
+                    about: {
+                      ...p.about,
+                      name: e?.target.value as string,
+                    },
+                  }))
+                }
+              />
+
+              <InputText
+                label={'Role'}
+                value={dataProfile?.about.role || ''}
+                onChange={(e) =>
+                  setProfile((p) => ({
+                    ...p,
+                    about: {
+                      ...p.about,
+                      role: e?.target.value as string,
+                    },
+                  }))
+                }
+              />
+
               <RitchText
                 onChange={(value) =>
                   setProfile((p) => ({
@@ -484,13 +495,14 @@ export default function ProfileForm() {
                   }))
                 }
                 label="Bio"
+                value={dataProfile?.about.bio || ''}
               />
 
               <Grid container rowSpacing={1} columnSpacing={1}>
                 <Grid size={6}>
                   <InputText
                     label="Email"
-                    value={profile.contact?.email.url || ''}
+                    value={dataProfile?.contact?.email.url || ''}
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
@@ -508,7 +520,7 @@ export default function ProfileForm() {
                 <Grid size={6}>
                   <InputText
                     label="Email Icon"
-                    value={profile.contact?.email.icon || ''}
+                    value={dataProfile?.contact?.email.icon || ''}
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
@@ -529,7 +541,7 @@ export default function ProfileForm() {
                 <Grid size={6}>
                   <InputText
                     label="Phone"
-                    value={profile.contact?.phone.url || ''}
+                    value={dataProfile?.contact?.phone.url || ''}
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
@@ -547,7 +559,7 @@ export default function ProfileForm() {
                 <Grid size={6}>
                   <InputText
                     label="Phone Icon"
-                    value={profile.contact?.phone.icon || ''}
+                    value={dataProfile?.contact?.phone.icon || ''}
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
@@ -568,7 +580,7 @@ export default function ProfileForm() {
                 <Grid size={6}>
                   <InputText
                     label="Github"
-                    value={profile.contact?.github.url || ''}
+                    value={dataProfile?.contact?.github.url || ''}
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
@@ -586,7 +598,7 @@ export default function ProfileForm() {
                 <Grid size={6}>
                   <InputText
                     label="Github Icon"
-                    value={profile.contact?.github.icon || ''}
+                    value={dataProfile?.contact?.github.icon || ''}
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
@@ -607,7 +619,7 @@ export default function ProfileForm() {
                 <Grid size={6}>
                   <InputText
                     label="Linkedin"
-                    value={profile.contact?.linkedin.url || ''}
+                    value={dataProfile?.contact?.linkedin.url || ''}
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
@@ -625,7 +637,7 @@ export default function ProfileForm() {
                 <Grid size={6}>
                   <InputText
                     label="Linkedin Icon"
-                    value={profile.contact?.linkedin.icon || ''}
+                    value={dataProfile?.contact?.linkedin.icon || ''}
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
@@ -646,7 +658,7 @@ export default function ProfileForm() {
                 <Grid size={6}>
                   <InputText
                     label="Line"
-                    value={profile.contact?.lineId.url || ''}
+                    value={dataProfile?.contact?.lineId.url || ''}
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
@@ -664,7 +676,7 @@ export default function ProfileForm() {
                 <Grid size={6}>
                   <InputText
                     label="Line Icon"
-                    value={profile.contact?.lineId.icon || ''}
+                    value={dataProfile?.contact?.lineId.icon || ''}
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
@@ -695,9 +707,9 @@ export default function ProfileForm() {
                 >
                   <input {...getResumeInputProps()} />
 
-                  {profile.about.resumeUrl ? (
+                  {dataProfile?.about.resumeUrl ? (
                     <Typography mt={1} fontSize={14}>
-                      <a href={profile.about.resumeUrl} target="_blank" rel="noopener noreferrer">
+                      <a href={dataProfile?.about.resumeUrl} target="_blank" rel="noopener noreferrer">
                         <Image src={'/assets/images/pdf_icon.png'} width={50} height={50} alt="" />
                       </a>
                     </Typography>
@@ -706,7 +718,7 @@ export default function ProfileForm() {
                   )}
                 </Box>
               )}
-              {profile.about.resumeUrl ? (
+              {dataProfile?.about.resumeUrl ? (
                 <IconButton aria-label="delete" size="large" color="error" onClick={deleteResumeFromFirestore}>
                   <HighlightOffRoundedIcon fontSize="inherit" />
                 </IconButton>
@@ -728,7 +740,7 @@ export default function ProfileForm() {
                 <Grid size={6}>
                   <Label>Skill Icon</Label>
                 </Grid>
-                {profile.skills?.map((skill) => {
+                {dataProfile?.skills?.map((skill) => {
                   return (
                     <>
                       <Grid size={5}>
@@ -736,7 +748,7 @@ export default function ProfileForm() {
                           placeholder="Name"
                           value={skill.name || ''}
                           onChange={(e) => {
-                            const updateSkillName = profile.skills.find((s) => s.seq === skill.seq);
+                            const updateSkillName = dataProfile?.skills.find((s) => s.seq === skill.seq);
                             if (updateSkillName) {
                               let _updateSkillName = { ...updateSkillName, name: e?.target.value || '' };
                               setProfile((p) => ({
@@ -752,7 +764,7 @@ export default function ProfileForm() {
                           placeholder="Icon"
                           value={skill.icon || ''}
                           onChange={(e) => {
-                            const updateSkillIcon = profile.skills.find((s) => s.seq === skill.seq);
+                            const updateSkillIcon = dataProfile?.skills.find((s) => s.seq === skill.seq);
                             if (updateSkillIcon) {
                               let _updateSkillIcon = { ...updateSkillIcon, icon: e?.target.value || '' };
                               setProfile((p) => ({
@@ -992,7 +1004,7 @@ export default function ProfileForm() {
             <Button onClick={handleEducationSave} sx={{ mt: 1 }} startIcon={<SaveOutlinedIcon />}>
               Save Education
             </Button>
-            {profile.education?.map((edu, i) => (
+            {dataProfile?.education?.map((edu, i) => (
               <Box key={i} mt={2} display="flex" justifyContent="space-between">
                 <Box>
                   <Typography fontWeight={600}>{edu.institution}</Typography>

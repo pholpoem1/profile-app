@@ -59,13 +59,13 @@ const LayoutPage = ({
             )}
           </Box>
           <MenuMobile anchorEl={anchorEl} setAnchorEl={setAnchorEl} />
-          <Container maxWidth="lg" disableGutters sx={{ px: { xs: 2, md: 4 }, py: 4 }}>
+          <Container maxWidth={'lg'} disableGutters sx={{ px: { xs: 2, md: 4 }, py: 4 }}>
             {children}
           </Container>
         </Box>
+        <ToggleThemeButton toggleColorMode={() => setDarkMode(!darkMode)} />
+        <ScrollTop />
       </main>
-      <ToggleThemeButton toggleColorMode={() => setDarkMode(!darkMode)} />
-      <ScrollTop />
     </ProfileProvider>
   );
 };
