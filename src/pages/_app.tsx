@@ -7,13 +7,19 @@ import { useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
 import { getGoogleTheme } from '@/styles/googleTheme';
 import '@/styles/glow-background.css';
+import 'aos/dist/aos.css';
 
 export default function App({ Component, pageProps }: AppProps) {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
     const stored = localStorage.getItem('darkMode');
-    if (stored === 'true') setDarkMode(true);
+
+    if (stored === 'true') {
+      setDarkMode(true);
+    } else if (stored === 'false') {
+      setDarkMode(false);
+    }
   }, []);
 
   useEffect(() => {

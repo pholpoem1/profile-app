@@ -3,10 +3,7 @@
 
 
 
-html, body {
-  max-height: 100vh;
-  scroll-behavior: smooth;
-  
+html, body {  
   margin: 0;
   padding: 0;
   width: 100%;
@@ -28,4 +25,50 @@ a {
 ul {
   padding-inline: 40px;
 }
+
+.menu {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.menu-item {
+  position: relative;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #555;
+  transition: color 0.3s ease;
+}
+
+.menu-item::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 0%;
+  background: rgba(234, 67, 53, 0.5);
+  transition: width 0.3s ease;
+}
+
+.menu-item:hover {
+  color: rgba(234, 67, 53, 0.5);
+}
+
+.menu-item:hover::after {
+  width: 100%;
+}
+
+.menu-item.active {
+  color: rgba(234, 67, 53, 0.5);
+  font-weight: bold;
+}
+
+.menu-item.active::after {
+  width: 100%;
+}
+
 

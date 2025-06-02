@@ -3,4 +3,4 @@ export const CONSTANTS = {
   document: 'public',
 };
 
-export const SECTIONS_MENU = ['about', 'skills', 'experience', 'education'];
+export const SECTIONS_MENU = ['about', 'skills', 'experience', 'contact'];

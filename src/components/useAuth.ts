@@ -10,7 +10,6 @@ export const useAuth = () => {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
-      console.log('user :>> ', user);
       setUser(user);
       setLoading(false);
     });

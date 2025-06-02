@@ -1,6 +1,6 @@
 /* ===== Shared Blur Background ===== */
 .glow-bg {
-    position: absolute;
+    /* position: absolute; */
     z-index: -10;
     border-radius: 9999px;
     filter: blur(10rem); /* เพิ่มความเบลอ */
@@ -11,27 +11,27 @@
   .glow-circle {
     top: -6rem;
     left: calc(50% - 5rem);
-    transform: translateX(-50%);
+    transform: translateX(77%);
     width: 20rem;
     height: 20rem;
     border-radius: 9999px;
     background-color: rgba(66, 133, 244, 0.5); /* Google Blue - 50% */
     filter: blur(14rem);
     z-index: -10;
-    position: absolute;
+    /* position: absolute; */
   }
   
   .glow-oval {
     top: 14rem;
     /* left: calc(50% + 5rem); */
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(-77%);
     width: 30rem;
     height: 25rem;
     border-radius: 9999px;
     background-color: rgba(234, 67, 53, 0.5); 
     filter: blur(14rem);
     z-index: -10;
-    position: absolute;
+    /* position: absolute; */
   }
   
   
@@ -53,17 +53,23 @@
     background-color: rgba(161, 44, 36, 0.5);
   }
   
-  
+  ul{
+    padding-inline: 20px;
+  }
+
   /* ===== Responsive Enhancements ===== */
   @media (min-width: 640px) {
     .glow-circle {
-      width: 68.75rem;
+      width: 50rem;
       height: 30rem;
     }
   
     .glow-oval {
-      width: 68.75rem;
+      width: 50rem;
       height: 28rem;
     }
+
+    ul{
+      padding-inline: 40px;
+    }
   }
-  

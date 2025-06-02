@@ -1,5 +1,5 @@
 import { SectionKey } from '@/pages';
-import React, { createContext, ReactNode, RefObject, useContext, useRef, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useState } from 'react';
 
 const ProfileContext = createContext({
   anchorEl: null as HTMLElement | null,

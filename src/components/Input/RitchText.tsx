@@ -1,4 +1,4 @@
-import StarterKit from "@tiptap/starter-kit";
+import StarterKit from '@tiptap/starter-kit';
 import {
   MenuButtonBold,
   MenuButtonBulletedList,
@@ -7,10 +7,10 @@ import {
   MenuDivider,
   MenuSelectHeading,
   RichTextEditor,
-  type RichTextEditorRef
-} from "mui-tiptap";
-import { useRef } from "react";
-import Label from "./Label";
+  type RichTextEditorRef,
+} from 'mui-tiptap';
+import { useRef } from 'react';
+import Label from './Label';
 
 interface IRitchText {
   onChange?: (_e: string | undefined) => void;
@@ -19,12 +19,7 @@ interface IRitchText {
   isRequired?: boolean;
 }
 
-const RitchText = ({
-  onChange,
-  value,
-  label = "",
-  isRequired = false
-}: IRitchText) => {
+const RitchText = ({ onChange, value, label = '', isRequired = false }: IRitchText) => {
   const rteRef = useRef<RichTextEditorRef>(null);
 
   return (

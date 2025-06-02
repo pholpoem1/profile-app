@@ -1,13 +1,12 @@
 import { Box, Container, IconButton, useMediaQuery, useTheme } from '@mui/material';
-
 import { Lato } from 'next/font/google';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import MenuMobile from './MenuMobile';
 import { ProfileProvider, useProfileContext } from '@/contexts/ProfileProvider';
 import ProgressBar from './ProgressBar';
 import ScrollTop from './ScrollTop';
-import ToggleThemeButton from './ToggleThemeButton';
 import Header from './Header';
+import { useState } from 'react';
 
 const lato = Lato({
   weight: ['400', '700'],
@@ -27,21 +26,17 @@ const LayoutPage = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { setAnchorEl, anchorEl } = useProfileContext();
-
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  const [isOpenMenu, setIsOpenMenu] = useState(false);
+  const handleClick = () => {
+    setIsOpenMenu((preState) => !preState);
   };
 
   return (
     <ProfileProvider>
       <main className={lato.className} id="main">
         <Box>
-          <div className="glow-bg glow-circle"></div>
-          <div className="glow-bg glow-oval"></div>
-          <Header />
+          <Header toggleColorMode={() => setDarkMode(!darkMode)} />
           <ProgressBar />
-
           <Box
             sx={{
               position: 'fixed',
@@ -58,13 +53,22 @@ const LayoutPage = ({
               </IconButton>
             )}
           </Box>
-          <MenuMobile anchorEl={anchorEl} setAnchorEl={setAnchorEl} />
-          <Container maxWidth={'lg'} disableGutters sx={{ px: { xs: 2, md: 4 }, py: 4 }}>
+          <MenuMobile isOpenMenu={isOpenMenu} toggleDrawer={handleClick} />
+          <Container
+            maxWidth={'lg'}
+            disableGutters
+            sx={{
+              px: { xs: 2, md: 4 },
+              py: { xs: 4, md: 0 },
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
             {children}
           </Container>
+          {/* <ToggleThemeButton toggleColorMode={() => setDarkMode(!darkMode)} /> */}
+          <ScrollTop />
         </Box>
-        <ToggleThemeButton toggleColorMode={() => setDarkMode(!darkMode)} />
-        <ScrollTop />
       </main>
     </ProfileProvider>
   );

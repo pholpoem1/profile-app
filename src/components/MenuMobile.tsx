@@ -1,64 +1,41 @@
+import { useProfileContext } from '@/contexts/ProfileProvider';
 import { SECTIONS_MENU } from '@/utils/constants';
-import { Menu, MenuItem } from '@mui/material';
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemText } from '@mui/material';
+import { smoothScrollTo } from './Header';
 
-const MenuMobile = ({
-  anchorEl,
-  setAnchorEl,
-}: {
-  anchorEl: null | HTMLElement;
-  setAnchorEl: (value: HTMLElement | null) => void;
-}) => {
-  const open = Boolean(anchorEl);
+const MenuMobile = ({ isOpenMenu, toggleDrawer }: { isOpenMenu: boolean; toggleDrawer: () => void }) => {
+  const sectionMenu = SECTIONS_MENU;
+  const { active, setActive } = useProfileContext();
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+  const DrawerList = (
+    <Box sx={{ width: 250 }} role="presentation">
+      <List>
+        {sectionMenu.map((text) => (
+          <ListItem key={text} disablePadding>
+            <ListItemButton
+              className={`menu-item ${text === active ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                const el = document.getElementById(text);
+                if (el) {
+                  smoothScrollTo(el.offsetTop, 1000);
+                  setActive(text);
+                }
+                toggleDrawer();
+              }}
+            >
+              <ListItemText primary={text} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
 
   return (
-    <Menu
-      anchorEl={anchorEl}
-      id="account-menu"
-      open={open}
-      onClose={handleClose}
-      onClick={handleClose}
-      slotProps={{
-        paper: {
-          elevation: 0,
-          sx: {
-            overflow: 'visible',
-            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-            mt: 1.5,
-            // '& .MuiAvatar-root': {
-            //   width: 32,
-            //   height: 32,
-            //   ml: -0.5,
-            //   mr: 1,
-            // },
-            '&::before': {
-              content: '""',
-              display: 'block',
-              position: 'absolute',
-              top: 0,
-              right: 14,
-              width: 10,
-              height: 10,
-              bgcolor: 'background.paper',
-              transform: 'translateY(-50%) rotate(45deg)',
-              zIndex: 0,
-            },
-          },
-        },
-      }}
-      transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-      anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-    >
-      {SECTIONS_MENU.map((section) => (
-        <MenuItem key={section} onClick={handleClose}>
-          {section.charAt(0).toUpperCase() + section.slice(1)}
-        </MenuItem>
-      ))}
-      {/* <MenuItem onClick={handleClose}>Profile</MenuItem> */}
-    </Menu>
+    <Drawer open={isOpenMenu} onClose={toggleDrawer}>
+      {DrawerList}
+    </Drawer>
   );
 };
 
