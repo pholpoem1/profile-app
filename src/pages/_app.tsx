@@ -35,6 +35,27 @@ export default function App({ Component, pageProps }: AppProps) {
         <LayoutPage setDarkMode={setDarkMode} darkMode={darkMode}>
           <Head>
             <title>Jintana' s Profile</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <meta name="theme-color" content="#ffffff" />
+
+            <meta
+              name="description"
+              content="Hi, I'm Jintana — a frontend developer passionate about building intuitive and performant web apps using React and Next.js."
+            />
+            <meta
+              name="keywords"
+              content="Frontend Developer, Web Developer, React, Next.js, Tailwind CSS, Portfolio, Jintana, Thai Developer, UI UX"
+            />
+            <meta name="author" content="Jintana Pholpoem" />
+
+            <meta property="og:type" content="website" />
+            <meta property="og:url" content="https://www.jintana-ph.com/" />
+            <meta property="og:title" content="Jintana Pholpoem | Frontend Developer" />
+            <meta
+              property="og:description"
+              content="Explore my portfolio showcasing projects built with modern web technologies."
+            />
+            <meta property="og:image" content="https://www.jintana-ph.com/og-image.png" />
           </Head>
           <Component {...pageProps} />
         </LayoutPage>
