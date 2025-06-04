@@ -69,22 +69,27 @@ interface IExperienceGroup {
 }
 interface IContactItem {
   email: {
+    seq?: number;
     url: string;
     icon: string;
   };
   phone: {
+    seq?: number;
     url: string;
     icon: string;
   };
   linkedin: {
+    seq?: number;
     url: string;
     icon: string;
   };
   github: {
+    seq?: number;
     url: string;
     icon: string;
   };
   lineId: {
+    seq?: number;
     url: string;
     icon: string;
   };

@@ -78,13 +78,15 @@ export default function Home() {
   if (!data) return <div>ไม่พบข้อมูล</div>;
 
   const sortedExperience = data?.experience && [...data?.experience].sort((a, b) => b.seq - a.seq);
-  const contactList = Object.entries(data?.contact || {});
+  const contactList = Object.entries(data?.contact || {}).sort(([key, value], [key2, value2]) => {
+    return value.seq - value2.seq;
+  });
 
   return (
     <Box sx={{ display: 'flex', flexGrow: 1, mt: { xs: 6, md: 0 } }}>
       <Box sx={{ flex: 1 }}>
         <Box
-          height={'100vh'}
+          height={{ xs: '100vh', sm: '30vh', md: '100vh' }}
           id={'about'}
           component={'div'}
           ref={sectionRefs['about']}
@@ -114,9 +116,7 @@ export default function Home() {
               <Typography variant="h6" textAlign={{ xs: 'center', sm: 'left' }}>
                 {data?.about.role}
               </Typography>
-              {/* <Box px={{ xs: 2, sm: 0 }}> */}
               <div dangerouslySetInnerHTML={{ __html: data?.about.bio || '' }} />
-              {/* </Box> */}
               <Box display={'flex'} justifyContent={{ xs: 'center', sm: 'start' }} gap={2}>
                 <Button
                   variant="outlined"
@@ -236,42 +236,44 @@ export default function Home() {
           height={'100vh'}
           sx={{ py: 10, px: { xs: 0, md: 4 } }}
         >
-          <Stack direction="row" flexWrap="wrap" gap={2} justifyContent={'center'}>
+          <Grid container rowSpacing={1} columnSpacing={1}>
             {contactList.map(([key, value], i) => {
               if (!value.url) return null;
               const name = value.url.replace('https://', '');
               return (
-                <Button
-                  href={key === 'email' ? `mailto:${value.url}` : key === 'phone' ? `tel:${value.url}` : value.url}
-                  key={i}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    ':hover': { backgroundColor: 'transparent' },
-                  }}
-                  variant="text"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  component="a"
-                  startIcon={
-                    <SVG
-                      {...(key === 'github' && { viewBox: '0 0 97.707 97.707' })}
-                      src={
-                        key === 'github'
-                          ? `/assets/icons/${theme.palette.mode === 'dark' ? 'github-mark-white' : 'github-mark'}.svg`
-                          : value.icon
-                      }
-                      width={40}
-                      height={40}
-                    />
-                  }
-                >
-                  <Typography>{name}</Typography>
-                </Button>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Button
+                    href={key === 'email' ? `mailto:${value.url}` : key === 'phone' ? `tel:${value.url}` : value.url}
+                    key={i}
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      ':hover': { backgroundColor: 'transparent' },
+                    }}
+                    variant="text"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    component="a"
+                    startIcon={
+                      <SVG
+                        {...(key === 'github' && { viewBox: '0 0 97.707 97.707' })}
+                        src={
+                          key === 'github'
+                            ? `/assets/icons/${theme.palette.mode === 'dark' ? 'github-mark-white' : 'github-mark'}.svg`
+                            : value.icon
+                        }
+                        width={40}
+                        height={40}
+                      />
+                    }
+                  >
+                    <Typography>{name}</Typography>
+                  </Button>
+                </Grid>
               );
             })}
-          </Stack>
+          </Grid>
         </Box>
       </Box>
     </Box>
