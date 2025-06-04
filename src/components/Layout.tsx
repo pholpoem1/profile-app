@@ -1,12 +1,15 @@
-import { Box, Container, IconButton, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Container, Fab, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import { Lato } from 'next/font/google';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import MenuMobile from './MenuMobile';
-import { ProfileProvider, useProfileContext } from '@/contexts/ProfileProvider';
+import { ProfileProvider } from '@/contexts/ProfileProvider';
 import ProgressBar from './ProgressBar';
 import ScrollTop from './ScrollTop';
 import Header from './Header';
 import { useState } from 'react';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import NightlightIcon from '@mui/icons-material/Nightlight';
+import Footer from './Footer';
 
 const lato = Lato({
   weight: ['400', '700'],
@@ -48,9 +51,22 @@ const LayoutPage = ({
             }}
           >
             {isMobile && (
-              <IconButton onClick={handleClick}>
-                <MenuRoundedIcon fontSize="large" />
-              </IconButton>
+              <>
+                <Fab
+                  size="small"
+                  sx={{ backgroundColor: theme.palette.mode === 'dark' ? 'white' : 'transparent' }}
+                  onClick={() => setDarkMode(!darkMode)}
+                >
+                  {theme.palette.mode === 'dark' ? (
+                    <LightModeIcon fontSize="small" sx={{ color: '#f5b942' }} />
+                  ) : (
+                    <NightlightIcon fontSize="small" sx={{ color: 'black' }} />
+                  )}
+                </Fab>
+                <IconButton onClick={handleClick}>
+                  <MenuRoundedIcon fontSize="large" />
+                </IconButton>
+              </>
             )}
           </Box>
           <MenuMobile isOpenMenu={isOpenMenu} toggleDrawer={handleClick} />
@@ -66,6 +82,7 @@ const LayoutPage = ({
           >
             {children}
           </Container>
+          <Footer />
           {/* <ToggleThemeButton toggleColorMode={() => setDarkMode(!darkMode)} /> */}
           <ScrollTop />
         </Box>

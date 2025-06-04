@@ -89,7 +89,7 @@ export default function Home() {
           component={'div'}
           ref={sectionRefs['about']}
           data-section={'about'}
-          sx={{ px: { xs: 0, md: 4 }, pt: { xs: 10, md: 0 } }}
+          sx={{ px: { xs: 0, md: 4 } }}
         >
           <div style={{ position: 'absolute' }}>
             <div className="glow-bg glow-circle"></div>
